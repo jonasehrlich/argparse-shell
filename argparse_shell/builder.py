@@ -13,7 +13,7 @@ if ty.TYPE_CHECKING:
 
 def build_interactive_shell_from_namespace(
     namespace: Namespace, prompt: str = "cli>", intro: str = None
-) -> InteractiveCmd:
+) -> interactive.InteractiveCmd:
     """Build a interactive shell from a namespace definition
 
     :param namespace: Namespace to use as a base
