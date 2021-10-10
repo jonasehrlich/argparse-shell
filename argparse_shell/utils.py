@@ -26,15 +26,15 @@ def parse_arg_string(arg_string: str) -> ty.Tuple[ty.Tuple[ty.Any, ...], ty.Dict
     for item in arg_string.split():
         split_result = item.split("=", 1)
         if len(split_result) == 1:
-            args.append(_eval_literal_value(split_result[0]))
+            args.append(eval_literal_value(split_result[0]))
         elif len(split_result) == 2:
-            kwargs[split_result[0]] = _eval_literal_value(split_result[1])
+            kwargs[split_result[0]] = eval_literal_value(split_result[1])
         else:
             raise ValueError(f"Cannot parse argument string item: '{item}'")
     return tuple(args), kwargs
 
 
-def _eval_literal_value(value: str) -> ty.Any:
+def eval_literal_value(value: str) -> ty.Any:
     """Evaluate a string to a literal value
 
     :param value: Value to evaluate
@@ -77,8 +77,7 @@ def python_name_to_dashed(name: str) -> str:
     """
     name = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1-\2", name)
     name = re.sub(r"([a-z\d])([A-Z])", r"\1-\2", name)
-    name.replace("_", "-")
-    return name.lower()
+    return name.replace("_", "-").lower()
 
 
 def get_command_name(func: ty.Callable) -> str:
