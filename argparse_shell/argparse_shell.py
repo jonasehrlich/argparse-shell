@@ -4,11 +4,9 @@ import argparse
 import cmd
 import inspect
 import sys
-import textwrap
 import typing as ty
 
-from . import constants, utils, wrappers
-from .interactive import InteractiveCmd
+from . import builder, constants, utils
 
 ArgparseShell_T = ty.TypeVar("ArgparseShell_T", bound="ArgparseShell")  # pylint: disable=invalid-name
 Namespace = ty.Dict[str, ty.Callable]
@@ -28,7 +26,6 @@ class ArgparseShell:
         cls: ty.Type[ArgparseShell_T],
         program_name: str,
         obj: ty.Any,
-        parent_parsers: ty.Sequence[argparse.ArgumentParser] = None,
         intro: str = None,
     ) -> ArgparseShell_T:
         """
@@ -93,9 +90,9 @@ class ArgparseShell:
         :return: Instance of the ArgparseShell
         :rtype: ArgparseShell_T
         """
-        namespace = _build_namespace_from_object(obj)
-        parser = _build_arg_parser_from_namespace(namespace, program_name=program_name, parent_parsers=parent_parsers)
-        interactive = _build_interactive_shell_from_namespace(namespace, prompt=f"{program_name}> ", intro=intro)
+        namespace = builder.build_namespace_from_object(obj)
+        parser = builder.build_arg_parser_from_namespace(namespace, program_name=program_name)
+        interactive = builder.build_interactive_shell_from_namespace(namespace, prompt=f"{program_name}> ", intro=intro)
         return cls(parser, interactive)
 
     def main(self):
@@ -132,105 +129,3 @@ class ArgparseShell:
         """
         print(msg, file=sys.stderr)
         sys.exit(1)
-
-
-def _build_interactive_shell_from_namespace(
-    namespace: Namespace, prompt: str = "cli>", intro: str = None
-) -> InteractiveCmd:
-    """Build a interactive shell from a namespace definition
-
-    :param namespace: Namespace to use as a base
-    :type namespace: Namespace
-    :param prompt: Prompt prefix to use in the interactive shell, defaults to "cli>"
-    :type prompt: str, optional
-    :param intro: Intro, or welcome message to print after interactive shell start, defaults to None
-    :type intro: str, optional
-    :return: Subclass of InteractiveCmd
-    :rtype: cmd.Cmd
-    """
-    class_namespace = dict()
-    for command, func in namespace.items():
-
-        cmd_func_name = f"do_{func.__name__}"
-        help_func_name = f"help_{func.__name__}"
-        class_namespace[cmd_func_name] = wrappers.interactive_method_wrapper(wrappers.pprint_wrapper(func))
-        class_namespace[help_func_name] = get_interactive_help_function(command, func)
-    class_namespace["prompt"] = prompt
-    class_namespace["intro"] = intro
-
-    interactive_class = type("InteractiveCmdShell", (InteractiveCmd,), class_namespace)
-    return interactive_class()
-
-
-def _build_arg_parser_from_namespace(
-    namespace: Namespace, program_name: str, parent_parsers: ty.Sequence[argparse.ArgumentParser] = None
-) -> argparse.ArgumentParser:
-    if parent_parsers is None:
-        parent_parsers = list()
-
-    parser = argparse.ArgumentParser(prog=program_name, parents=parent_parsers)
-    subparsers = parser.add_subparsers(help="sub-command help")
-    for name, func in namespace.items():
-        docstring = utils.get_docstring(func)
-        # TODO: specify arguments on the sub parsers
-        sub_cmd_parser = subparsers.add_parser(name, help=docstring)
-        sub_cmd_parser.add_argument("args", nargs="*", help=get_argument_help_string(func))
-        sub_cmd_parser.set_defaults(**{constants.ARGPARSE_CALLBACK_FUNCTION_NAME: wrappers.pprint_wrapper(func)})
-    return parser
-
-
-def _build_namespace_from_object(obj: ty.Any) -> ty.Dict[str, ty.Callable]:
-    """Build a namespace from an object. The namespace is a mapping of command names to callback functions.
-    This layer wraps coroutine functions and descriptors in functions, to allow them being called directly.
-
-    :param obj: Object to build the namespace from
-    :type obj: ty.Any
-    :return: Mapping of command names defined in an object
-    :rtype: ty.Dict[str, ty.Callable]
-    """
-    namespace = dict()
-    for name, value in inspect.getmembers(obj.__class__, utils.is_supported_command_type):
-        if not utils.is_shell_cmd(value):
-            continue
-        # TODO: add support for descriptors
-        # if inspect.isgetsetdescriptor(value):
-        #    cmd_name = utils.python_name_to_dashed(name)
-        #    namespace[cmd_name] = wrappers.getsetdescriptor_wrapper(value)
-        if inspect.iscoroutinefunction(value):
-            cmd_name = utils.get_command_name(value)
-            namespace[cmd_name] = wrappers.corofunc_wrapper(getattr(obj, name))
-        elif inspect.ismethod(value) or inspect.isfunction(value):
-            cmd_name = utils.get_command_name(value)
-            namespace[cmd_name] = getattr(obj, name)
-
-    return namespace
-
-
-def get_argument_help_string(func: ty.Callable) -> str:
-    """Get the help string for a command line argument"""
-    sig = inspect.signature(func)
-    return f"{func.__name__}{sig}"
-
-
-def get_interactive_help_function(command: str, func: ty.Callable):
-    """Creates a help function to use in the interactive mode
-
-    :param func: Function to create the help function for
-    :type func: ty.Callable
-    """
-    help_text = textwrap.dedent(
-        f"""
-    {command}
-    {'-'*len(command)}
-
-    {inspect.signature(func)}
-
-    {utils.get_docstring(func)}
-    """
-    )
-
-    def do_help(self):  # pylint: disable=unused-argument
-        print(help_text)
-
-    do_help.__name__ = f"help_{func.__name__}"
-    return do_help
