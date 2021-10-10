@@ -19,7 +19,7 @@ def pprint_wrapper(func: ty.Callable) -> ty.Callable:
     return wrapper
 
 
-def interactive_method_wrapper(func: ty.Callable) -> ty.Callable:
+def wrap_interactive_method(func: ty.Callable) -> ty.Callable:
     """Get a wrapper for a callable, to be used in a :py:class:`cmd.Cmd` interactive shell.
     The wrapper function parses the arguments and calls the wrapped callable and does **not** return
     the return value, as this would lead the interactive loop to stop
@@ -39,7 +39,7 @@ def interactive_method_wrapper(func: ty.Callable) -> ty.Callable:
     return wrapper
 
 
-def corofunc_wrapper(corofunc: ty.Callable):
+def wrap_corofunc(corofunc: ty.Callable):
     """Get a wrapper for a coroutine function that executes the coroutine on the event loop"""
 
     @functools.wraps(corofunc)
@@ -49,7 +49,7 @@ def corofunc_wrapper(corofunc: ty.Callable):
     return wrapper
 
 
-def getsetdescriptor_wrapper(descriptor):
+def wrap_getsetdescriptor(descriptor):
     """Get a function wrapper for a getsetdescriptor"""
 
     def wrapper(self, *args):
@@ -62,4 +62,29 @@ def getsetdescriptor_wrapper(descriptor):
     wrapper.__name__ = descriptor.fget.__name__
     wrapper.__doc__ = descriptor.fget.__doc__
 
+    return wrapper
+
+
+def wrap_generatorfunc(genfunc: ty.Callable):
+    """Get a function wrapper for a generatorfunction"""
+
+    @functools.wraps(genfunc)
+    def wrapper(self, *args, **kwargs):  # pylint: disable=unused-argument
+        gen = genfunc(*args, **kwargs)
+        return [item for item in gen]
+
+    return wrapper
+
+
+def wrap_asyncgenfunc(genfunc: ty.Callable):
+    """Get a function wrapper for a generatorfunction"""
+
+    @functools.wraps(genfunc)
+    def wrapper(self, *args, **kwargs):  # pylint: disable=unused-argument
+        async def consume_asyncgen():
+
+            gen: ty.AsyncGenerator = genfunc(*args, **kwargs)
+            return [item async for item in gen]
+
+        return asyncio.get_event_loop().run_until_complete(consume_asyncgen())
     return wrapper

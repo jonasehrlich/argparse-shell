@@ -5,11 +5,11 @@ import inspect
 import textwrap
 import typing as ty
 
-from . import constants, utils, wrappers
+from . import constants, utils, wrappers, interactive
 
 if ty.TYPE_CHECKING:
     from .argparse_shell import Namespace
-    from .interactive import InteractiveCmd
+
 
 def build_interactive_shell_from_namespace(
     namespace: Namespace, prompt: str = "cli>", intro: str = None
@@ -30,18 +30,16 @@ def build_interactive_shell_from_namespace(
 
         cmd_func_name = f"do_{func.__name__}"
         help_func_name = f"help_{func.__name__}"
-        class_namespace[cmd_func_name] = wrappers.interactive_method_wrapper(wrappers.pprint_wrapper(func))
+        class_namespace[cmd_func_name] = wrappers.wrap_interactive_method(wrappers.pprint_wrapper(func))
         class_namespace[help_func_name] = get_interactive_help_function(command, func)
     class_namespace["prompt"] = prompt
     class_namespace["intro"] = intro
 
-    interactive_class = type("InteractiveCmdShell", (InteractiveCmd,), class_namespace)
+    interactive_class = type("InteractiveCmdShell", (interactive.InteractiveCmd,), class_namespace)
     return interactive_class()
 
 
-def build_arg_parser_from_namespace(
-    namespace: Namespace, program_name: str
-) -> argparse.ArgumentParser:
+def build_arg_parser_from_namespace(namespace: Namespace, program_name: str) -> argparse.ArgumentParser:
     """Build an :py:class:`argparse.ArgumentParser` from a namespace definition. The argument parser will contain
     each function in the namespace as a subcommand with all the arguments as positional arguments.
 
@@ -54,7 +52,7 @@ def build_arg_parser_from_namespace(
     """
 
     parser = argparse.ArgumentParser(prog=program_name)
-    subparsers = parser.add_subparsers(help="sub-command help")
+    subparsers = parser.add_subparsers(title="sub commands", description="valid subcommands", help="")
     for name, func in namespace.items():
         docstring = utils.get_docstring(func)
         # TODO: specify arguments on the sub parsers
@@ -83,7 +81,7 @@ def build_namespace_from_object(obj: ty.Any) -> ty.Dict[str, ty.Callable]:
         #    namespace[cmd_name] = wrappers.getsetdescriptor_wrapper(value)
         if inspect.iscoroutinefunction(value):
             cmd_name = utils.get_command_name(value)
-            namespace[cmd_name] = wrappers.corofunc_wrapper(getattr(obj, name))
+            namespace[cmd_name] = wrappers.wrap_corofunc(getattr(obj, name))
         elif inspect.ismethod(value) or inspect.isfunction(value):
             cmd_name = utils.get_command_name(value)
             namespace[cmd_name] = getattr(obj, name)
