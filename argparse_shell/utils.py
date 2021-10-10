@@ -29,13 +29,13 @@ def split_to_literals(
     :param pairs: Iterable of 2-tuples containing the ("start", "stop") pairs between which no splits can happen,
                   defaults to ``(("(", ")"), ("[", "]"), ("{", "}"))``
     :param quotes: Sequence of characters to consider as quotes
-    :raises IndexError: Raised if
+    :raises IndexError: Raised if no matching quotes or brackets can be found
     :yield:
     :rtype: str
     """
+    value = value.strip()
     if not value:
-        yield ""
-        # No value, raise the StopIteration on the next call of the generator
+        # No value, raise the StopIteration on the first call of the generator
         return
 
     def find_with_raise(haystack: str, needle: str, start: int = 0, occurrence: int = 0, exc: IndexError = None):

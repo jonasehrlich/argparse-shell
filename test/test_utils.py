@@ -42,6 +42,10 @@ def test_split_to_literals(subtests):
         literals = list(utils.split_to_literals(" ".join(all_items)))
         assert literals == all_items
 
+    for input_value, expected_output_value in (("", list()), ("  ", list()), ("  asdf=asdf", ["asdf=asdf"])):
+        with subtests.test(item=input_value):
+            literals = list(utils.split_to_literals(input_value))
+            assert literals == expected_output_value
 
 def test_find_nth():
     """Test the function to find the nth occurrence of a substring"""
@@ -72,6 +76,7 @@ def test_parse_arg_string():
         " ".join(f"{arg} {kwarg}" for arg, kwarg in zip(args_string_items, kwargs_string_items))
     ) == (args, kwargs)
 
+    assert utils.parse_arg_string("") == (tuple(), dict())
 
 def test_eval_literal_value():
     """Test evaluation of literals"""
