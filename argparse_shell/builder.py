@@ -52,9 +52,17 @@ def build_arg_parser_from_namespace(namespace: Namespace, program_name: str) -> 
         docstring = cmd.docstring()
         # TODO: specify arguments on the sub parsers
         sub_cmd_parser = subparsers.add_parser(name, help=docstring)
-        sub_cmd_parser.add_argument("args", nargs="*", help=get_argument_help_string(cmd.func))
+
+        # Add each argument of the callable as a positional argument
+        sig = cmd.signature()
+        for parameter_name, parameter in sig.parameters.items():
+            parameter_kwargs = dict()
+            if parameter.default != parameter.empty:
+                parameter_kwargs["default"] = parameter.default
+            sub_cmd_parser.add_argument(parameter_name, help=str(parameter), **parameter_kwargs)
         sub_cmd_parser.set_defaults(**{constants.ARGPARSE_CALLBACK_FUNCTION_NAME: wrappers.pprint_wrapper(cmd.func)})
     return parser
+
 
 
 def get_argument_help_string(func: ty.Callable) -> str:
