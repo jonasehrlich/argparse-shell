@@ -7,6 +7,136 @@ import typing as ty
 from . import constants
 
 
+def split_to_literals(
+    value: str,
+    sep: str = " ",
+    pairs: ty.Sequence[ty.Tuple[str, str]] = (("(", ")"), ("[", "]"), ("{", "}")),
+    quotes: ty.Sequence[str] = "\"'",
+) -> str:
+    """
+    Split a string of Python literals into multiple literals.
+
+    The string is split by `sep` but parts inside pairs or quotes are considered unbreakable.
+    Use :py:func:`itertools.islice` to slice the splits.
+
+    This implementation is based on
+    https://www.daniweb.com/programming/software-development/code/426990/split-string-except-inside-brackets-or-quotes
+
+    :param value: String to separate
+    :type value: str
+    :param sep: Seperator to split the string by, defaults to " "
+    :type sep: str, optional
+    :param pairs: Iterable of 2-tuples containing the ("start", "stop") pairs between which no splits can happen,
+                  defaults to ``(("(", ")"), ("[", "]"), ("{", "}"))``
+    :param quotes: Sequence of characters to consider as quotes
+    :raises IndexError: Raised if
+    :yield:
+    :rtype: str
+    """
+    if not value:
+        yield ""
+        # No value, raise the StopIteration on the next call of the generator
+        return
+
+    def find_with_raise(haystack: str, needle: str, start: int = 0, occurrence: int = 0, exc: IndexError = None):
+        """Calls the find method and raises an exception if the value is not found"""
+        idx = find_nth(haystack, needle, occurrence, start)
+        if idx < 0:
+            occurrence_str = f"{occurrence}. occurrence of " if occurrence else ""
+            exc = exc or IndexError(f"Did not find {occurrence_str}'{needle}' in '{haystack[start:]}'")
+            raise exc
+        return idx
+
+    # Create a map of left pair characters to right pair characters
+    pair_map = dict(pairs)
+
+    value_length = len(value)
+    item_start_idx = 0  # Start index of the current item
+    idx = 0  # Global iteration index
+
+    # Use an index-based while loop to do quick jumps on the index
+    while idx < value_length:
+        character = value[idx]
+        if value[idx:].startswith(sep):
+            # A separator was reached, yield the start of the current item to the current index
+            yield value[item_start_idx:idx]
+
+            # Move idx to the next character that is not a separator
+            if len(sep) == 1:
+                # The separator is a single character, use the builtin lstrip method
+                idx = value_length - len(value[idx:].lstrip(sep))
+            else:
+                # The separator is a sequence of characters, iteratively iterate until
+                # we don't find a separator anymore
+                while value[idx:].startswith(sep):
+                    idx = idx + len(sep)
+            item_start_idx = idx
+
+        elif character in quotes:
+            # We are in a quoted section, jump to the close of the quote
+            quote_start_idx = idx
+
+            exc = IndexError(f"Unmatched quote at index {quote_start_idx}: {value}")
+            idx = find_with_raise(value, character, idx + 1, exc=exc)
+            # Index is at the closing quote, increment to next character
+            idx += 1
+        elif character in pair_map:
+            # We are in a secton that starts with a start element defined in the pairs,
+            # so we need to find the end index of this pair
+
+            # Get the close character to search for
+            close_character = pair_map[character]
+
+            # Get the possible first end of the pair
+            exc = IndexError(
+                f"Unmatched closing character '{close_character}' for '{character}' at index {idx}: {value}"
+            )
+            # Move index to after the open
+            idx += 1
+            inner_end_idx = find_with_raise(value, close_character, idx, exc=exc)
+
+            # Find the number of nested pair starts in the inner string
+            num_nested = value[idx:inner_end_idx].count(character)
+            if num_nested:
+                inner_end_idx = find_with_raise(value, close_character, idx, num_nested, exc=exc)
+
+            # No further starting brackets were found until the first closing bracket, so further nesting is
+            # discovered
+            idx = inner_end_idx
+        else:
+            idx += 1
+
+    if value[item_start_idx:]:
+        yield value[item_start_idx:]
+
+
+def find_nth(haystack: str, needle: str, occurrence: int = 0, start: int = 0, end: int = None) -> int:
+    """Find the nth occurrence of a substring in a string
+
+    :param haystack: String to find the item in
+    :type haystack: str
+    :param needle: Substring to find
+    :type needle: str
+    :param occurrence: Occurrence to find in the string
+    :type occurrence: int
+    :param start: Index to start, defaults to 0
+    :type start: int, optional
+    :param end: Index to end the search, defaults to None
+    :type end: int, optional
+    :return: Index of the n-th occurrence of the substring, returns -1 if not found
+    :rtype: int
+    """
+    end = end if end is not None else len(haystack)
+    if not occurrence:
+        return haystack.find(needle, start, end)
+
+    haystack = haystack[start:end]
+    parts = haystack.split(needle, occurrence + 1)
+    if len(parts) <= occurrence + 1:
+        return -1
+    return (start + len(haystack)) - len(parts[-1]) - len(needle)
+
+
 def parse_arg_string(arg_string: str) -> ty.Tuple[ty.Tuple[ty.Any, ...], ty.Dict[str, ty.Any]]:
     """Parse a string of arguments to positional and keyword arguments.
     This currently supports only parsing of literal values.
@@ -23,7 +153,7 @@ def parse_arg_string(arg_string: str) -> ty.Tuple[ty.Tuple[ty.Any, ...], ty.Dict
     """
     args = list()
     kwargs = dict()
-    for item in arg_string.split():
+    for item in split_to_literals(arg_string):
         split_result = item.split("=", 1)
         if len(split_result) == 1:
             args.append(eval_literal_value(split_result[0]))
