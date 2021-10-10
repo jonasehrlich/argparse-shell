@@ -31,7 +31,7 @@ def wrap_interactive_method(func: ty.Callable) -> ty.Callable:
     """
 
     @functools.wraps(func)
-    def wrapper(self, arg_string):  # pylint: disable=unused-argument
+    def wrapper(arg_string: str):  # pylint: disable=unused-argument
         args, kwargs = utils.parse_arg_string(arg_string)
         func(*args, **kwargs)
         # Do not return anything from the wrapper, because this will trigger the stop of the command loop
@@ -43,23 +43,42 @@ def wrap_corofunc(corofunc: ty.Callable):
     """Get a wrapper for a coroutine function that executes the coroutine on the event loop"""
 
     @functools.wraps(corofunc)
-    def wrapper(self, *args, **kwargs):  # pylint: disable=unused-argument
+    def wrapper(*args, **kwargs):  # pylint: disable=unused-argument
         return asyncio.get_event_loop().run_until_complete(corofunc(*args, **kwargs))
 
     return wrapper
 
 
-def wrap_getsetdescriptor(descriptor):
-    """Get a function wrapper for a getsetdescriptor"""
+def wrap_datadescriptor(obj: ty.Any, name: str, descriptor: ty.Any):
+    """Get a function wrapper for a descriptor on a object.
 
-    def wrapper(self, *args):
+    The function wrapper will call the getter if no argument is passed into the wrapper,
+    if one argument is passed in, the setter is called. For all other numbers of arguments,
+    a :py:class:`TypeError` is raised.
+
+    :param obj: Instance of the class the descriptor lives on
+    :type obj: ty.Any
+    :param name: Name of the attribute the descriptor handles
+    :type name: str
+    :param descriptor: Descriptor object
+    :type descriptor:
+    """
+
+    def wrapper(*args):  # pylint: disable=inconsistent-return-statements
         if not args:
-            return descriptor.fget(self)
+            # No args, so the getter needs to be called
+            return descriptor.fget(obj)
         if len(args) == 1:
-            descriptor.fset(self, args[0])
-        raise ValueError(f"Invalid number of arguments for descriptor {self.__class__.__name__}.{descriptor.__name__}")
+            # One argument so call the setter
+            if descriptor.fset is None:
+                raise AttributeError(f"Can't set attribute '{name}'")
+            descriptor.fset(obj, *args)
+            return
 
-    wrapper.__name__ = descriptor.fget.__name__
+        # Descriptors only support one or no argument, so raise if
+        raise TypeError(f"Invalid number of arguments for descriptor {obj.__class__.__name__}.{name}")
+
+    wrapper.__name__ = name
     wrapper.__doc__ = descriptor.fget.__doc__
 
     return wrapper
@@ -69,22 +88,23 @@ def wrap_generatorfunc(genfunc: ty.Callable):
     """Get a function wrapper for a generatorfunction"""
 
     @functools.wraps(genfunc)
-    def wrapper(self, *args, **kwargs):  # pylint: disable=unused-argument
+    def wrapper(*args, **kwargs):  # pylint: disable=unused-argument
         gen = genfunc(*args, **kwargs)
-        return [item for item in gen]
+        return list(gen)
 
     return wrapper
 
 
-def wrap_asyncgenfunc(genfunc: ty.Callable):
+def wrap_asyncgeneratorfunc(asyncgenfunc: ty.Callable):
     """Get a function wrapper for a generatorfunction"""
 
-    @functools.wraps(genfunc)
-    def wrapper(self, *args, **kwargs):  # pylint: disable=unused-argument
+    @functools.wraps(asyncgenfunc)
+    def wrapper(*args, **kwargs):  # pylint: disable=unused-argument
         async def consume_asyncgen():
 
-            gen: ty.AsyncGenerator = genfunc(*args, **kwargs)
+            gen: ty.AsyncGenerator = asyncgenfunc(*args, **kwargs)
             return [item async for item in gen]
 
         return asyncio.get_event_loop().run_until_complete(consume_asyncgen())
+
     return wrapper
