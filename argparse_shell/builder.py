@@ -75,11 +75,10 @@ def build_namespace_from_object(obj: ty.Any) -> ty.Dict[str, ty.Callable]:
     for name, value in inspect.getmembers(obj.__class__, utils.is_supported_command_type):
         if not utils.is_shell_cmd(value):
             continue
-        # TODO: add support for descriptors
-        # if inspect.isgetsetdescriptor(value):
-        #    cmd_name = utils.python_name_to_dashed(name)
-        #    namespace[cmd_name] = wrappers.getsetdescriptor_wrapper(value)
-        if inspect.iscoroutinefunction(value):
+        if inspect.isdatadescriptor(value):
+            cmd_name = utils.python_name_to_dashed(name)
+            namespace[cmd_name] = wrappers.wrap_datadescriptor(obj, name, value)
+        elif inspect.iscoroutinefunction(value):
             cmd_name = utils.get_command_name(value)
             namespace[cmd_name] = wrappers.wrap_corofunc(getattr(obj, name))
         elif inspect.ismethod(value) or inspect.isfunction(value):
