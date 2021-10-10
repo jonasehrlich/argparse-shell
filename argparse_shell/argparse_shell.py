@@ -95,9 +95,9 @@ class ArgparseShell:
         interactive = builder.build_interactive_shell_from_namespace(namespace, prompt=f"{program_name}> ", intro=intro)
         return cls(parser, interactive)
 
-    def main(self):
+    def main(self, argv: ty.Sequence[str] = None):
         """Run the arg shell. The shell first tries to parse"""
-        namespace, _ = self.parser.parse_known_args()
+        namespace, _ = self.parser.parse_known_args(argv)
 
         if constants.ARGPARSE_CALLBACK_FUNCTION_NAME in namespace:
             func = getattr(namespace, constants.ARGPARSE_CALLBACK_FUNCTION_NAME)
