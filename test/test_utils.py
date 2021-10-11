@@ -1,5 +1,7 @@
 import itertools
 
+import pytest
+
 from argparse_shell import decorators, utils
 
 
@@ -53,15 +55,42 @@ def test_find_nth():
     word = "test"
 
     input_data = word * 10
-    assert utils.find_nth(input_data, "e", 0) == 1
-    assert utils.find_nth(input_data, "e", 1) == len(word) + 1
-    assert utils.find_nth(input_data, "e", 2) == 2 * len(word) + 1
-    assert utils.find_nth(input_data, "e", 1, start=3) == 2 * len(word) + 1
+    assert utils.find_nth(input_data, "e", occurrence=0) == 1
+    assert utils.find_nth(input_data, "e", occurrence=1) == len(word) + 1
+    assert utils.find_nth(input_data, "e", occurrence=2) == 2 * len(word) + 1
+    assert utils.find_nth(input_data, "e", start=3, occurrence=1) == 2 * len(word) + 1
 
     # Only one occurrence for 'e' in 'test'
-    assert utils.find_nth(word, "e", 1) == -1
+    assert utils.find_nth(word, "e", occurrence=1) == -1
 
-    assert utils.find_nth(word, "t", 1, end=-1) == -1
+    assert utils.find_nth(word, "t", end=-1, occurrence=1) == -1
+
+
+def test_find_with_raise():
+    """Test the function to find the nth occurrence of a substring"""
+    word = "test"
+
+    input_data = word * 10
+    assert utils.find_nth_with_raise(input_data, "e", occurrence=0) == 1
+    assert utils.find_nth_with_raise(input_data, "e", occurrence=1) == len(word) + 1
+    assert utils.find_nth_with_raise(input_data, "e", occurrence=2) == 2 * len(word) + 1
+    assert utils.find_nth_with_raise(input_data, "e", occurrence=1, start=3) == 2 * len(word) + 1
+
+    # Only one occurrence for 'e' in 'test'
+    with pytest.raises(IndexError):
+        utils.find_nth_with_raise(word, "e", occurrence=1)
+
+    # Only one occurrence for 'e' in 'test', with custom exception
+    class MyError(Exception):
+        """Custom error"""
+
+    exc = MyError("Super message")
+
+    with pytest.raises(MyError):
+        utils.find_nth_with_raise(word, "e", occurrence=1, exc=exc)
+
+    with pytest.raises(IndexError):
+        utils.find_nth_with_raise(word, "t", occurrence=1, end=-1)
 
 
 def test_parse_arg_string():

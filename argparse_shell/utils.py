@@ -38,15 +38,6 @@ def split_to_literals(
         # No value, raise the StopIteration on the first call of the generator
         return
 
-    def find_with_raise(haystack: str, needle: str, start: int = 0, occurrence: int = 0, exc: IndexError = None):
-        """Calls the find method and raises an exception if the value is not found"""
-        idx = find_nth(haystack, needle, occurrence, start)
-        if idx < 0:
-            occurrence_str = f"{occurrence}. occurrence of " if occurrence else ""
-            exc = exc or IndexError(f"Did not find {occurrence_str}'{needle}' in '{haystack[start:]}'")
-            raise exc
-        return idx
-
     # Create a map of left pair characters to right pair characters
     pair_map = dict(pairs)
 
@@ -77,7 +68,7 @@ def split_to_literals(
             quote_start_idx = idx
 
             exc = IndexError(f"Unmatched quote at index {quote_start_idx}: {value}")
-            idx = find_with_raise(value, character, idx + 1, exc=exc)
+            idx = find_nth_with_raise(value, character, idx + 1, exc=exc)
             # Index is at the closing quote, increment to next character
             idx += 1
         elif character in pair_map:
@@ -93,12 +84,12 @@ def split_to_literals(
             )
             # Move index to after the open
             idx += 1
-            inner_end_idx = find_with_raise(value, close_character, idx, exc=exc)
+            inner_end_idx = find_nth_with_raise(value, close_character, idx, exc=exc)
 
             # Find the number of nested pair starts in the inner string
             num_nested = value[idx:inner_end_idx].count(character)
             if num_nested:
-                inner_end_idx = find_with_raise(value, close_character, idx, num_nested, exc=exc)
+                inner_end_idx = find_nth_with_raise(value, close_character, idx, occurrence=num_nested, exc=exc)
 
             # No further starting brackets were found until the first closing bracket, so further nesting is
             # discovered
@@ -110,8 +101,11 @@ def split_to_literals(
         yield value[item_start_idx:]
 
 
-def find_nth(haystack: str, needle: str, occurrence: int = 0, start: int = 0, end: int = None) -> int:
-    """Find the nth occurrence of a substring in a string
+def find_nth_with_raise(
+    haystack: str, needle: str, start: int = 0, end: int = None, occurrence: int = 0, exc: Exception = None
+) -> int:
+    """
+    Find the nth occurrence of a substring in a string and raise a specific exception if it is not found
 
     :param haystack: String to find the item in
     :type haystack: str
@@ -121,13 +115,37 @@ def find_nth(haystack: str, needle: str, occurrence: int = 0, start: int = 0, en
     :type occurrence: int
     :param start: Index to start, defaults to 0
     :type start: int, optional
+    :param exc: Exception to raise in the error case, defaults to None, which will result in an `IndexError`
+    :type exc: Exception, optional
+    :return: Index of the n-th occurrence of the substring
+    """
+    idx = find_nth(haystack, needle, start, end, occurrence)
+    if idx < 0:
+        occurrence_str = f"{occurrence}. occurrence of " if occurrence else ""
+        exc = exc or IndexError(f"Did not find {occurrence_str}'{needle}' in '{haystack[start:]}'")
+        raise exc
+    return idx
+
+
+def find_nth(haystack: str, needle: str, start: int = 0, end: int = None, occurrence: int = 0) -> int:
+    """Find the nth occurrence of a substring in a string
+
+    :param haystack: String to find the item in
+    :type haystack: str
+    :param needle: Substring to find
+    :type needle: str
+    :param start: Index to start, defaults to 0
+    :type start: int, optional
     :param end: Index to end the search, defaults to None
     :type end: int, optional
+    :param occurrence: Occurrence to find in the string, defaults to 0
+    :type occurrence: int, optional
     :return: Index of the n-th occurrence of the substring, returns -1 if not found
     :rtype: int
     """
     end = end if end is not None else len(haystack)
     if not occurrence:
+        # If we need to find the first occurrence fall back to the builtin find method
         return haystack.find(needle, start, end)
 
     haystack = haystack[start:end]
