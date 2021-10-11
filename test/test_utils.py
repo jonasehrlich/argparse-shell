@@ -47,6 +47,7 @@ def test_split_to_literals(subtests):
             literals = list(utils.split_to_literals(input_value))
             assert literals == expected_output_value
 
+
 def test_find_nth():
     """Test the function to find the nth occurrence of a substring"""
     word = "test"
@@ -77,6 +78,7 @@ def test_parse_arg_string():
     ) == (args, kwargs)
 
     assert utils.parse_arg_string("") == (tuple(), dict())
+
 
 def test_eval_literal_value():
     """Test evaluation of literals"""
