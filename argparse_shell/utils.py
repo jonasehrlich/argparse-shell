@@ -199,7 +199,7 @@ def eval_literal_value(value: str) -> ty.Any:
             raise exc  # pylint: disable=raise-missing-from
 
 
-def is_shell_cmd(func: ty.Callable) -> bool:
+def is_shell_cmd(func: ty.Callable, name: str = None) -> bool:
     """Return whether a callable should be added as a shell command.
     This function returns `False` if:
     * The name of the callable starts with an underscore
@@ -207,10 +207,14 @@ def is_shell_cmd(func: ty.Callable) -> bool:
 
     :param func: Callable to check
     :type func: ty.Callable
+    :param name: Name of the attribute, if set to None, the `__name__` attribute of the `func` argument is used,
+                 defaults to None
+    :type name: str, optional
     :return: Whether a callable should be added as a shell command
     :rtype: bool
     """
-    if func.__name__.startswith("_"):
+    name = name or func.__name__
+    if name.startswith("_"):
         return False
     return getattr(func, constants.ARGPARSE_SHELL_CMD_ATTRIBUTE_NAME, True)
 
@@ -245,19 +249,4 @@ def get_command_name(func: ty.Callable) -> str:
 
 def get_docstring(func: ty.Any) -> str:
     """Return a valid docstring for any object"""
-
     return textwrap.dedent((inspect.getdoc(func) or f"{func.__name__} {func.__class__.__name__}").strip())
-
-
-def is_supported_command_type(value: ty.Any) -> bool:
-    """Return whether an attribute is supported as a command implementation
-
-    :param value: Attribute value
-    :type value: ty.Any
-    :return: Whether the attribute can be used as a command
-    :rtype: bool
-    """
-    for predicate in (inspect.iscoroutinefunction, inspect.ismethod, inspect.isfunction):
-        if predicate(value):
-            return True
-    return False

@@ -72,8 +72,8 @@ def build_namespace_from_object(obj: ty.Any) -> ty.Dict[str, ty.Callable]:
     :rtype: ty.Dict[str, ty.Callable]
     """
     namespace = dict()
-    for name, value in inspect.getmembers(obj.__class__, utils.is_supported_command_type):
-        if not utils.is_shell_cmd(value):
+    for name, value in inspect.getmembers(obj.__class__):
+        if not utils.is_shell_cmd(value, name):
             continue
         if inspect.isdatadescriptor(value):
             cmd_name = utils.python_name_to_dashed(name)
@@ -84,6 +84,8 @@ def build_namespace_from_object(obj: ty.Any) -> ty.Dict[str, ty.Callable]:
         elif inspect.ismethod(value) or inspect.isfunction(value):
             cmd_name = utils.get_command_name(value)
             namespace[cmd_name] = getattr(obj, name)
+        else:
+            continue
 
     return namespace
 
