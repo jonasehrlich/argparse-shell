@@ -81,9 +81,10 @@ def test_wrap_interactive_method(subtests, args_kwargs, mockreturn: mock.Mock): 
 
     for args, kwargs in args_kwargs:
         with subtests.test(args=args, kwargs=kwargs):
+            obj = object()
             arg_string = " ".join(str(arg) for arg in args)
             kwarg_string = " ".join(f"{key}={value}" for key, value in kwargs.items())
-            result = wrapped(f"{arg_string} {kwarg_string}")
+            result = wrapped(obj, f"{arg_string} {kwarg_string}")
 
             assert result is None
             mockreturn.assert_called_once_with(*args, **kwargs)

@@ -21,8 +21,13 @@ def pprint_wrapper(func: ty.Callable) -> ty.Callable:
 
 def wrap_interactive_method(func: ty.Callable) -> ty.Callable:
     """Get a wrapper for a callable, to be used in a :py:class:`cmd.Cmd` interactive shell.
-    The wrapper function parses the arguments and calls the wrapped callable and does **not** return
-    the return value, as this would lead the interactive loop to stop
+    The wrapper function expects two arguments, the instance (`self`) and the argument string.
+    The argument string is parsed to Python literals which are then passed into the wrapped method.
+
+    Afterwards, the return value of the wrapped function / method is ignored and **not** returned,
+    as this would lead the interactive loop to stop. In order to print the return value,
+    consider wrapping the callable into a decorator such as :py:func:`pprint_wrapper` before
+    passing it into :py:func:`wrap_interactive_method`.
 
     :param func: Callable to be wrapped
     :type func: ty.Callable
@@ -31,7 +36,7 @@ def wrap_interactive_method(func: ty.Callable) -> ty.Callable:
     """
 
     @functools.wraps(func)
-    def wrapper(arg_string: str):  # pylint: disable=unused-argument
+    def wrapper(_, arg_string: str):
         args, kwargs = utils.parse_arg_string(arg_string)
         func(*args, **kwargs)
         # Do not return anything from the wrapper, because this will trigger the stop of the command loop
@@ -43,7 +48,7 @@ def wrap_corofunc(corofunc: ty.Callable):
     """Get a wrapper for a coroutine function that executes the coroutine on the event loop"""
 
     @functools.wraps(corofunc)
-    def wrapper(*args, **kwargs):  # pylint: disable=unused-argument
+    def wrapper(*args, **kwargs):
         return asyncio.get_event_loop().run_until_complete(corofunc(*args, **kwargs))
 
     return wrapper
@@ -88,7 +93,7 @@ def wrap_generatorfunc(genfunc: ty.Callable):
     """Get a function wrapper for a generatorfunction"""
 
     @functools.wraps(genfunc)
-    def wrapper(*args, **kwargs):  # pylint: disable=unused-argument
+    def wrapper(*args, **kwargs):
         gen = genfunc(*args, **kwargs)
         return list(gen)
 
@@ -99,7 +104,7 @@ def wrap_asyncgeneratorfunc(asyncgenfunc: ty.Callable):
     """Get a function wrapper for a generatorfunction"""
 
     @functools.wraps(asyncgenfunc)
-    def wrapper(*args, **kwargs):  # pylint: disable=unused-argument
+    def wrapper(*args, **kwargs):
         async def consume_asyncgen():
 
             gen: ty.AsyncGenerator = asyncgenfunc(*args, **kwargs)
