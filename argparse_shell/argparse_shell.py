@@ -23,10 +23,7 @@ class ArgparseShell:
 
     @classmethod
     def from_object(
-        cls: ty.Type[ArgparseShell_T],
-        program_name: str,
-        obj: ty.Any,
-        intro: str = None,
+        cls: ty.Type[ArgparseShell_T], program_name: str, obj: ty.Any, intro: str = None
     ) -> ArgparseShell_T:
         """
         Factory method to create a ArgparseShell from an arbitrary object.

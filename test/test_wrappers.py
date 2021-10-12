@@ -140,6 +140,7 @@ def test_wrap_asyncgenfunc():
 
 def test_wrap_datadescriptor(subtests):
     """Test the wrapper function for data descriptors"""
+
     class Driver:
         def __init__(self, name: str, port: int):
             self._name = name
