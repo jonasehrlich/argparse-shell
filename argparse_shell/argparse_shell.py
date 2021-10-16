@@ -7,9 +7,10 @@ import sys
 import typing as ty
 
 from . import builder, constants, utils
+from .namespace import Namespace
+
 
 ArgparseShell_T = ty.TypeVar("ArgparseShell_T", bound="ArgparseShell")  # pylint: disable=invalid-name
-Namespace = ty.Dict[str, ty.Callable]
 
 
 class ArgparseShell:
@@ -87,7 +88,7 @@ class ArgparseShell:
         :return: Instance of the ArgparseShell
         :rtype: ArgparseShell_T
         """
-        namespace = builder.build_namespace_from_object(obj)
+        namespace = Namespace.from_object(obj)
         parser = builder.build_arg_parser_from_namespace(namespace, program_name=program_name)
         interactive = builder.build_interactive_shell_from_namespace(namespace, prompt=f"{program_name}> ", intro=intro)
         return cls(parser, interactive)

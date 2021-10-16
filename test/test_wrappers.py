@@ -163,16 +163,16 @@ def test_wrap_datadescriptor(subtests):
 
     with subtests.test(msg="get set property"):
         drv = Driver(driver_name, port)
-        wrapped = wrappers.wrap_datadescriptor(drv, "port", Driver.port)
+        wrapped = wrappers.wrap_datadescriptor(Driver.port)
 
-        assert wrapped() == port
-        assert wrapped(0) is None
-        assert wrapped() == 0
+        assert wrapped(drv) == port
+        assert wrapped(drv, 0) is None
+        assert wrapped(drv) == 0
 
     with subtests.test(msg="get property"):
         drv = Driver(driver_name, port)
-        wrapped = wrappers.wrap_datadescriptor(drv, "name", Driver.name)
+        wrapped = wrappers.wrap_datadescriptor(Driver.name)
 
-        assert wrapped() == driver_name
+        assert wrapped(drv) == driver_name
         with pytest.raises(AttributeError):
-            assert wrapped("new name")
+            assert wrapped(drv, "new name")

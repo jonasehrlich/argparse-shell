@@ -1,0 +1,145 @@
+from __future__ import annotations
+
+import typing as ty
+import inspect
+import textwrap
+from . import wrappers
+
+T = ty.TypeVar("T", bound="_CommandBase")
+
+
+__all__ = ["UnsupportedCommandTypeError", "Command", "UnboundCommand"]
+
+
+class UnsupportedCommandTypeError(Exception):
+    """Raised if a command should be created from an unsupported type"""
+
+
+class _CommandBase:
+    """Base class for commands. This class implements the basic methods to get metadata on the function the command
+    implements"""
+
+    def __init__(self, name: str, func: ty.Callable) -> None:
+        self.name = name
+        self._func = func
+
+    def __repr__(self) -> str:
+        return repr(self._func)
+
+    def __call__(self, *args: ty.Any, **kwargs: ty.Any) -> ty.Any:
+        return self._func(*args, **kwargs)
+
+    def signature(self) -> inspect.Signature:
+        """Get the signature of the command"""
+        return inspect.signature(self._func)
+
+    def docstring(self) -> str:
+        """Return a valid docstring for any object"""
+        return textwrap.dedent(
+            (inspect.getdoc(self._func) or f"{self._func.__name__} {self._func.__class__.__name__}").strip()
+        )
+
+    def interactive_help_method(self) -> ty.Callable[[ty.Any], None]:
+        """Creates a help function to use in the interactive mode
+
+        :param func: Function to create the help function for
+        :type func: ty.Callable
+        """
+        help_text = textwrap.dedent(
+            f"""
+            {self.name}
+            {'-'*len(self.name)}
+
+            {self.signature()}
+
+            {self.docstring()}
+            """
+        )
+
+        def do_help(_self):
+            print(help_text)
+
+        do_help.__name__ = f"help_{self._func.__name__}"
+        return do_help
+
+    def interactive_method(self) -> ty.Callable:
+        """Get the method wrapped for an interactive shell"""
+        return wrappers.wrap_interactive_method(wrappers.pprint_wrapper(self._func))
+
+    def _pythonize_name(self) -> str:
+        """Create a Python name from the command name"""
+        return self.name.replace("-", "_")
+
+    @property
+    def interactive_method_name(self) -> str:
+        """Get the name for the interactive method for this command"""
+
+        return f"do_{self._pythonize_name()}"
+
+    @property
+    def interactive_help_method_name(self) -> str:
+        """Get the name for the interactive help method for this command"""
+        return f"help_{self._pythonize_name()}"
+
+
+class UnboundCommand(_CommandBase):
+    @classmethod
+    def from_callable(cls: ty.Type[T], name: str, func: ty.Callable) -> T:
+        """Create an unbound command from an arbitrary object
+
+        :param cls: Class that is created
+        :type cls: ty.Type[UnboundCommand]
+        :param name: Name of the command
+        :type name: str
+        :param func: Callable that implements the command
+        :type func: ty.Callable
+        :raises UnsupportedCommandTypeError: Raised if the type of the callable is not supported
+        :return: Unbound command wrapping the callable
+        :rtype: T
+        """
+        if inspect.isdatadescriptor(func):
+            wrapped = wrappers.wrap_datadescriptor(func)
+        elif inspect.iscoroutinefunction(func):
+            wrapped = wrappers.wrap_corofunc(func)
+        elif inspect.ismethod(func):
+            wrapped = func
+        elif inspect.isfunction(func):
+            wrapped = func
+        else:
+            raise UnsupportedCommandTypeError(f"{func.__class__.__name__} is not a supported command type")
+        return cls(name, wrapped)
+
+    def bind(self, obj: ty.Any) -> Command:
+        """
+        Bind the command to any object if it is an unbound method. If `obj` is a module or if the callable is
+        already a method, no binding will happen
+
+        :param obj: Object to bind to
+        :type obj: ty.Any
+        """
+        if inspect.ismodule(obj) or inspect.ismethod(self._func):
+            # Callables cannot be bound to modules
+            # The method is already bound, there's nothing to do anymore
+            return Command(self.name, self._func)
+
+        # TODO: handle if we have a datadescriptor wrapper
+        _func = getattr(obj, self._func.__name__)
+        return Command(self.name, _func)
+
+    def signature(self) -> inspect.Signature:
+        """Get the signature of the command"""
+        sig = super().signature()
+
+        updated_parameters = list(sig.parameters.values())
+        if len(updated_parameters) and updated_parameters[0].name == "self":
+            # We have a method that is unbound, remove the instance parameter from the signature
+            sig = sig.replace(parameters=updated_parameters[1:])
+
+        return sig
+
+
+class Command(_CommandBase):
+    """
+    Command class wrapping the function that executes the command, should be created by creating an
+    :py:class:`UnboundCommand` and binding it to an object
+    """
