@@ -11,7 +11,7 @@ def no_shell_cmd(func: ty.Any) -> ty.Any:
     return func
 
 
-def command(name: str) -> ty.Any:
+def command_name(name: str) -> ty.Any:
     """Decorator to explicitly set a name for a command"""
 
     def inner(func: ty.Any):
