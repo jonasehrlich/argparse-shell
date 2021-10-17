@@ -2,13 +2,10 @@ from __future__ import annotations
 
 import argparse
 import inspect
-import textwrap
 import typing as ty
 
-from . import constants, utils, wrappers, interactive
-
-if ty.TYPE_CHECKING:
-    from .argparse_shell import Namespace
+from . import constants, interactive, wrappers
+from .namespace import Namespace
 
 
 def build_interactive_shell_from_namespace(
@@ -26,12 +23,10 @@ def build_interactive_shell_from_namespace(
     :rtype: cmd.Cmd
     """
     class_namespace = dict()
-    for command, func in namespace.items():
+    for _, cmd in namespace.items():
 
-        cmd_func_name = f"do_{func.__name__}"
-        help_func_name = f"help_{func.__name__}"
-        class_namespace[cmd_func_name] = wrappers.wrap_interactive_method(wrappers.pprint_wrapper(func))
-        class_namespace[help_func_name] = get_interactive_help_function(command, func)
+        class_namespace[cmd.interactive_method_name] = cmd.interactive_method()
+        class_namespace[cmd.interactive_help_method_name] = cmd.interactive_help_method()
     class_namespace["prompt"] = prompt
     class_namespace["intro"] = intro
 
@@ -53,68 +48,16 @@ def build_arg_parser_from_namespace(namespace: Namespace, program_name: str) -> 
 
     parser = argparse.ArgumentParser(prog=program_name)
     subparsers = parser.add_subparsers(title="sub commands", description="valid subcommands", help="")
-    for name, func in namespace.items():
-        docstring = utils.get_docstring(func)
+    for name, cmd in namespace.items():
+        docstring = cmd.docstring()
         # TODO: specify arguments on the sub parsers
         sub_cmd_parser = subparsers.add_parser(name, help=docstring)
-        sub_cmd_parser.add_argument("args", nargs="*", help=get_argument_help_string(func))
-        sub_cmd_parser.set_defaults(**{constants.ARGPARSE_CALLBACK_FUNCTION_NAME: wrappers.pprint_wrapper(func)})
+        sub_cmd_parser.add_argument("args", nargs="*", help=get_argument_help_string(cmd.func))
+        sub_cmd_parser.set_defaults(**{constants.ARGPARSE_CALLBACK_FUNCTION_NAME: wrappers.pprint_wrapper(cmd.func)})
     return parser
-
-
-def build_namespace_from_object(obj: ty.Any) -> ty.Dict[str, ty.Callable]:
-    """Build a namespace from an object. The namespace is a mapping of command names to callback functions.
-    This layer wraps coroutine functions and descriptors in functions, to allow them being called directly.
-
-    :param obj: Object to build the namespace from
-    :type obj: ty.Any
-    :return: Mapping of command names defined in an object
-    :rtype: ty.Dict[str, ty.Callable]
-    """
-    namespace = dict()
-    for name, value in inspect.getmembers(obj.__class__):
-        if not utils.is_shell_cmd(value, name):
-            continue
-        if inspect.isdatadescriptor(value):
-            cmd_name = utils.python_name_to_dashed(name)
-            namespace[cmd_name] = wrappers.wrap_datadescriptor(obj, name, value)
-        elif inspect.iscoroutinefunction(value):
-            cmd_name = utils.get_command_name(value)
-            namespace[cmd_name] = wrappers.wrap_corofunc(getattr(obj, name))
-        elif inspect.ismethod(value) or inspect.isfunction(value):
-            cmd_name = utils.get_command_name(value)
-            namespace[cmd_name] = getattr(obj, name)
-        else:
-            continue
-
-    return namespace
 
 
 def get_argument_help_string(func: ty.Callable) -> str:
     """Get the help string for a command line argument"""
     sig = inspect.signature(func)
     return f"{func.__name__}{sig}"
-
-
-def get_interactive_help_function(command: str, func: ty.Callable):
-    """Creates a help function to use in the interactive mode
-
-    :param func: Function to create the help function for
-    :type func: ty.Callable
-    """
-    help_text = textwrap.dedent(
-        f"""
-    {command}
-    {'-'*len(command)}
-
-    {inspect.signature(func)}
-
-    {utils.get_docstring(func)}
-    """
-    )
-
-    def do_help(self):  # pylint: disable=unused-argument
-        print(help_text)
-
-    do_help.__name__ = f"help_{func.__name__}"
-    return do_help

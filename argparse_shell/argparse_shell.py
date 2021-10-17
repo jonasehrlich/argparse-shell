@@ -7,9 +7,10 @@ import sys
 import typing as ty
 
 from . import builder, constants, utils
+from .namespace import Namespace, UnboundNamespace
+
 
 ArgparseShell_T = ty.TypeVar("ArgparseShell_T", bound="ArgparseShell")  # pylint: disable=invalid-name
-Namespace = ty.Dict[str, ty.Callable]
 
 
 class ArgparseShell:
@@ -23,7 +24,11 @@ class ArgparseShell:
 
     @classmethod
     def from_object(
-        cls: ty.Type[ArgparseShell_T], program_name: str, obj: ty.Any, intro: str = None
+        cls: ty.Type[ArgparseShell_T],
+        program_name: str,
+        obj: ty.Any,
+        intro: str = None,
+        nested_namespaces: ty.Optional[ty.Mapping[str, UnboundNamespace]] = None,
     ) -> ArgparseShell_T:
         """
         Factory method to create a ArgparseShell from an arbitrary object.
@@ -87,7 +92,7 @@ class ArgparseShell:
         :return: Instance of the ArgparseShell
         :rtype: ArgparseShell_T
         """
-        namespace = builder.build_namespace_from_object(obj)
+        namespace = Namespace.from_object(obj, nested_namespaces=nested_namespaces)
         parser = builder.build_arg_parser_from_namespace(namespace, program_name=program_name)
         interactive = builder.build_interactive_shell_from_namespace(namespace, prompt=f"{program_name}> ", intro=intro)
         return cls(parser, interactive)

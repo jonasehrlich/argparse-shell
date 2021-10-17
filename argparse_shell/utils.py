@@ -1,7 +1,5 @@
 import ast
-import inspect
 import re
-import textwrap
 import typing as ty
 
 from . import constants
@@ -232,21 +230,20 @@ def python_name_to_dashed(name: str) -> str:
     return name.replace("_", "-").lower()
 
 
-def get_command_name(func: ty.Callable) -> str:
+def get_command_name(func: ty.Callable, default_name: str) -> str:
     """Get the command name for a callable. The command name can be defined using the
     :py:func:`~argparse_shell.decorators.command decorator`.
 
     :param func: Callable to get the command name for
     :type func: ty.Callable
+    :param default_name: Default name to use, if the object does not have a `__name__` attribute
+    :type default_name: str
     :return: Command name for the callable
     :rtype: str
     """
     fixed_name = getattr(func, constants.ARGPARSE_SHELL_CMD_ATTRIBUTE_NAME, False)
     if fixed_name and isinstance(fixed_name, str):
         return fixed_name
-    return python_name_to_dashed(func.__name__)
 
-
-def get_docstring(func: ty.Any) -> str:
-    """Return a valid docstring for any object"""
-    return textwrap.dedent((inspect.getdoc(func) or f"{func.__name__} {func.__class__.__name__}").strip())
+    name = getattr(func, "__name__", default_name)
+    return python_name_to_dashed(name)

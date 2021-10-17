@@ -54,22 +54,25 @@ def wrap_corofunc(corofunc: ty.Callable):
     return wrapper
 
 
-def wrap_datadescriptor(obj: ty.Any, name: str, descriptor: ty.Any):
+def wrap_datadescriptor(descriptor: ty.Any) -> ty.Callable:
     """Get a function wrapper for a descriptor on a object.
 
     The function wrapper will call the getter if no argument is passed into the wrapper,
     if one argument is passed in, the setter is called. For all other numbers of arguments,
     a :py:class:`TypeError` is raised.
 
-    :param obj: Instance of the class the descriptor lives on
-    :type obj: ty.Any
-    :param name: Name of the attribute the descriptor handles
-    :type name: str
     :param descriptor: Descriptor object
     :type descriptor:
+    :param name: Name of the attribute the descriptor handles
+    :type name: str
+    :return: Function wrapping the descriptor
+    :rtype: ty.Callable
     """
 
-    def wrapper(*args):  # pylint: disable=inconsistent-return-statements
+    func = descriptor.fget or descriptor.fset
+    name = func.__name__
+
+    def wrapper(obj: ty.Any, *args):  # pylint: disable=inconsistent-return-statements
         if not args:
             # No args, so the getter needs to be called
             return descriptor.fget(obj)

@@ -153,37 +153,12 @@ def test_get_command_name():
             ...
 
         func.__name__ = input_name
-        assert utils.get_command_name(func) == expected_name
+        assert utils.get_command_name(func, input_name) == expected_name
 
     cmd_name = "my_cmd"
 
-    @decorators.command(cmd_name)
+    @decorators.command_name(cmd_name)
     def func2():
         ...
 
-    assert utils.get_command_name(func2) == cmd_name
-
-
-def test_get_docstring():
-    """Test creation of docstrings from existing methods"""
-
-    def no_docstring():
-        ...
-
-    assert utils.get_docstring(no_docstring) == "no_docstring function"
-
-    expected_docstring = "Hello this is a docstring\nwhich should get dedented"
-
-    def with_docstring():
-        """Hello this is a docstring
-        which should get dedented"""
-
-    assert utils.get_docstring(with_docstring) == expected_docstring
-
-    def with_docstring2():
-        """
-        Hello this is a docstring
-        which should get dedented
-        """
-
-    assert utils.get_docstring(with_docstring2) == expected_docstring
+    assert utils.get_command_name(func2, func2.__name__) == cmd_name
