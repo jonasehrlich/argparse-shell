@@ -1,4 +1,5 @@
-from argparse_shell.namespace import UnboundNamespace, Namespace
+import pytest
+from argparse_shell.namespace import Namespace, UnboundNamespace
 
 
 def test_unbound_namespace_from_object_getter_property(subtests):
@@ -207,3 +208,61 @@ def test_namespace_from_object_other_attribute():
 
     namespace = Namespace.from_object(Driver())
     assert not namespace
+
+
+def test_unbound_nested_namespace_class(subtests):
+    """Test namespace building if nesting is through a class or instance"""
+
+    class Nested:
+        def foo(self):
+            ...
+
+    class OuterWithProperty:
+        def __init__(self):
+            self._nested = Nested()
+
+        @property
+        def nested(self):
+            return self._nested
+
+    class OuterWithClassAttribute:
+        nested = Nested()
+
+    class OuterWithInitAttribute:
+        def __init__(self) -> None:
+            self.nested = Nested()
+
+    with subtests.test("class nesting in property"):
+        nested_namespace = UnboundNamespace.from_object(Nested)
+        namespace = UnboundNamespace.from_object(OuterWithProperty, nested_namespaces=dict(nested=nested_namespace))
+
+        assert list(namespace.keys()) == ["nested-foo"]
+        assert namespace["nested-foo"].parent_namespaces == ("nested",)
+
+    with subtests.test("class nesting in class attribute"):
+        nested_namespace = UnboundNamespace.from_object(Nested)
+        namespace = UnboundNamespace.from_object(
+            OuterWithClassAttribute, nested_namespaces=dict(nested=nested_namespace)
+        )
+
+        assert list(namespace.keys()) == ["nested-foo"]
+        assert namespace["nested-foo"].parent_namespaces == ("nested",)
+
+    with subtests.test("class nesting in init attribute"):
+        nested_namespace = UnboundNamespace.from_object(Nested)
+        with pytest.raises(RuntimeError):
+            namespace = UnboundNamespace.from_object(
+                OuterWithInitAttribute, nested_namespaces=dict(nested=nested_namespace)
+            )
+
+    with subtests.test("instance nesting in init attribute"):
+        nested_namespace = UnboundNamespace.from_object(Nested)
+        namespace = UnboundNamespace.from_object(
+            OuterWithInitAttribute(), nested_namespaces=dict(nested=nested_namespace)
+        )
+        assert list(namespace.keys()) == ["nested-foo"]
+        assert namespace["nested-foo"].parent_namespaces == ("nested",)
+
+
+def test_unbound_nested_namespace_module():
+    ...

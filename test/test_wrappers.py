@@ -94,8 +94,12 @@ def test_wrap_interactive_method(subtests, args_kwargs, mockreturn: mock.Mock): 
 
 def test_wrap_corofunc(subtests, args_kwargs, mockreturn: mock.Mock):  # pylint: disable=redefined-outer-name
     """Test the wrapper for a coroutinefunction"""
+    orig_side_effect = mockreturn.side_effect
 
-    mockreturn.side_effect = asyncio.coroutine(mockreturn.side_effect)
+    async def async_side_effect(*args, **kwargs):
+        return orig_side_effect(*args, **kwargs)
+
+    mockreturn.side_effect = async_side_effect
     wrapped = wrappers.wrap_corofunc(mockreturn)
 
     for args, kwargs in args_kwargs:

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-import typing as ty
 import inspect
 import textwrap
-from . import wrappers
+import typing as ty
 
-T = ty.TypeVar("T", bound="_CommandBase")
+from . import utils, wrappers
+
+CT = ty.TypeVar("CT")
+CommandBase_T = ty.TypeVar("CommandBase_T", bound="_CommandBase")
+UnboundCommand_T = ty.TypeVar("UnboundCommand_T", bound="UnboundCommand")
 
 
 __all__ = ["UnsupportedCommandTypeError", "Command", "UnboundCommand"]
@@ -73,7 +76,6 @@ class _CommandBase:
     @property
     def interactive_method_name(self) -> str:
         """Get the name for the interactive method for this command"""
-
         return f"do_{self._pythonize_name()}"
 
     @property
@@ -83,8 +85,12 @@ class _CommandBase:
 
 
 class UnboundCommand(_CommandBase):
+    def __init__(self, name: str, func: ty.Callable, parent_namespaces: ty.Sequence[str] = tuple()) -> None:
+        super().__init__(name, func)
+        self.parent_namespaces: ty.Tuple[str, ...] = tuple(parent_namespaces)
+
     @classmethod
-    def from_callable(cls: ty.Type[T], name: str, func: ty.Callable) -> T:
+    def from_callable(cls: ty.Type[UnboundCommand_T], name: str, func: ty.Callable) -> UnboundCommand_T:
         """Create an unbound command from an arbitrary object
 
         :param cls: Class that is created
@@ -109,15 +115,32 @@ class UnboundCommand(_CommandBase):
             raise UnsupportedCommandTypeError(f"{func.__class__.__name__} is not a supported command type")
         return cls(name, wrapped)
 
+    def for_namespace(self: UnboundCommand_T, namespace: str) -> UnboundCommand_T:
+        """Create the command for a namespace
+
+        :param namespace: Namespace the new command should be located in
+        :type namespace: str
+        :return: New command with an updated namespace chain
+        :rtype: UnboundCommand_T
+        """
+        namespace_prefix = utils.python_name_to_dashed(namespace)
+
+        return self.__class__(f"{namespace_prefix}-{self.name}", self._func, (namespace,) + self.parent_namespaces)
+
     def bind(self, obj: ty.Any) -> Command:
         """
-        Bind the command to any object if it is an unbound method. If `obj` is a module or if the callable is
-        already a method, no binding will happen
+        Bind the command to any object if it is an unbound method. If `obj` is a module, the callable is
+        already a method or `obj` is explicitly set to None, no binding will happen
 
-        :param obj: Object to bind to
+        :param obj: Object to bind to, if this is explicitly set to None, no binding will happen
         :type obj: ty.Any
         """
-        if inspect.ismodule(obj) or inspect.ismethod(self._func):
+        # TODO: Eventually move resolution of parent namespaces to runtime
+        for namespace in self.parent_namespaces:
+            # Step through the parent namespaces to get to the object the command should be bound to
+            obj = getattr(obj, namespace)
+
+        if inspect.ismodule(obj) or inspect.ismethod(self._func) or obj is None:
             # Callables cannot be bound to modules
             # The method is already bound, there's nothing to do anymore
             return Command(self.name, self._func)
