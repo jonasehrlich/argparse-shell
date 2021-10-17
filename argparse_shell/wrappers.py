@@ -49,7 +49,7 @@ def wrap_corofunc(corofunc: ty.Callable):
 
     @functools.wraps(corofunc)
     def wrapper(*args, **kwargs):
-        return asyncio.get_event_loop().run_until_complete(corofunc(*args, **kwargs))
+        return _run_on_loop(corofunc(*args, **kwargs))
 
     return wrapper
 
@@ -110,6 +110,19 @@ def wrap_asyncgeneratorfunc(asyncgenfunc: ty.Callable):
             gen: ty.AsyncGenerator = asyncgenfunc(*args, **kwargs)
             return [item async for item in gen]
 
-        return asyncio.get_event_loop().run_until_complete(consume_asyncgen())
+        return _run_on_loop(consume_asyncgen())
 
     return wrapper
+
+
+def _run_on_loop(coro: ty.Coroutine):
+    """Run a coroutine on the event loop. In future releases of Python, :py:func:`asyncio.get_event_loop_loop`
+    will be an alias of :py:func:`asyncio.get_running_loop`. This method either re-uses a running loop, or uses the
+    :py:func:`asyncio.run` function."""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        runner = asyncio.run
+    else:
+        runner = loop.run_until_complete
+    return runner(coro)
