@@ -4,7 +4,7 @@ import argparse
 import inspect
 import typing as ty
 
-from . import constants, interactive, utils, wrappers
+from . import constants, interactive, wrappers
 from .namespace import Namespace
 
 
@@ -48,12 +48,12 @@ def build_arg_parser_from_namespace(namespace: Namespace, program_name: str) -> 
 
     parser = argparse.ArgumentParser(prog=program_name)
     subparsers = parser.add_subparsers(title="sub commands", description="valid subcommands", help="")
-    for name, func in namespace.items():
-        docstring = utils.get_docstring(func)
+    for name, cmd in namespace.items():
+        docstring = cmd.docstring()
         # TODO: specify arguments on the sub parsers
         sub_cmd_parser = subparsers.add_parser(name, help=docstring)
-        sub_cmd_parser.add_argument("args", nargs="*", help=get_argument_help_string(func))
-        sub_cmd_parser.set_defaults(**{constants.ARGPARSE_CALLBACK_FUNCTION_NAME: wrappers.pprint_wrapper(func)})
+        sub_cmd_parser.add_argument("args", nargs="*", help=get_argument_help_string(cmd.func))
+        sub_cmd_parser.set_defaults(**{constants.ARGPARSE_CALLBACK_FUNCTION_NAME: wrappers.pprint_wrapper(cmd.func)})
     return parser
 
 

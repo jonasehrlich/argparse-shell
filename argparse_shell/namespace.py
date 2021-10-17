@@ -7,6 +7,7 @@ import typing as ty
 from . import utils
 from .command import Command, UnsupportedCommandTypeError, UnboundCommand
 
+__all__ = ["Namespace", "UnboundNamespace"]
 
 T = ty.TypeVar("T")
 Command_T = ty.TypeVar("Command_T")

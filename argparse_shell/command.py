@@ -6,12 +6,11 @@ import typing as ty
 
 from . import utils, wrappers
 
+__all__ = ["UnsupportedCommandTypeError", "Command", "UnboundCommand"]
+
 CT = ty.TypeVar("CT")
 CommandBase_T = ty.TypeVar("CommandBase_T", bound="_CommandBase")
 UnboundCommand_T = ty.TypeVar("UnboundCommand_T", bound="UnboundCommand")
-
-
-__all__ = ["UnsupportedCommandTypeError", "Command", "UnboundCommand"]
 
 
 class UnsupportedCommandTypeError(Exception):
@@ -24,22 +23,22 @@ class _CommandBase:
 
     def __init__(self, name: str, func: ty.Callable) -> None:
         self.name = name
-        self._func = func
+        self.func = func
 
     def __repr__(self) -> str:
-        return repr(self._func)
+        return repr(self.func)
 
     def __call__(self, *args: ty.Any, **kwargs: ty.Any) -> ty.Any:
-        return self._func(*args, **kwargs)
+        return self.func(*args, **kwargs)
 
     def signature(self) -> inspect.Signature:
         """Get the signature of the command"""
-        return inspect.signature(self._func)
+        return inspect.signature(self.func)
 
     def docstring(self) -> str:
         """Return a valid docstring for any object"""
         return textwrap.dedent(
-            (inspect.getdoc(self._func) or f"{self._func.__name__} {self._func.__class__.__name__}").strip()
+            (inspect.getdoc(self.func) or f"{self.func.__name__} {self.func.__class__.__name__}").strip()
         )
 
     def interactive_help_method(self) -> ty.Callable[[ty.Any], None]:
@@ -62,12 +61,12 @@ class _CommandBase:
         def do_help(_self):
             print(help_text)
 
-        do_help.__name__ = f"help_{self._func.__name__}"
+        do_help.__name__ = f"help_{self.func.__name__}"
         return do_help
 
     def interactive_method(self) -> ty.Callable:
         """Get the method wrapped for an interactive shell"""
-        return wrappers.wrap_interactive_method(wrappers.pprint_wrapper(self._func))
+        return wrappers.wrap_interactive_method(wrappers.pprint_wrapper(self.func))
 
     def _pythonize_name(self) -> str:
         """Create a Python name from the command name"""
@@ -125,7 +124,7 @@ class UnboundCommand(_CommandBase):
         """
         namespace_prefix = utils.python_name_to_dashed(namespace)
 
-        return self.__class__(f"{namespace_prefix}-{self.name}", self._func, (namespace,) + self.parent_namespaces)
+        return self.__class__(f"{namespace_prefix}-{self.name}", self.func, (namespace,) + self.parent_namespaces)
 
     def bind(self, obj: ty.Any) -> Command:
         """
@@ -140,13 +139,13 @@ class UnboundCommand(_CommandBase):
             # Step through the parent namespaces to get to the object the command should be bound to
             obj = getattr(obj, namespace)
 
-        if inspect.ismodule(obj) or inspect.ismethod(self._func) or obj is None:
+        if inspect.ismodule(obj) or inspect.ismethod(self.func) or obj is None:
             # Callables cannot be bound to modules
             # The method is already bound, there's nothing to do anymore
-            return Command(self.name, self._func)
+            return Command(self.name, self.func)
 
         # TODO: handle if we have a datadescriptor wrapper
-        _func = getattr(obj, self._func.__name__)
+        _func = getattr(obj, self.func.__name__)
         return Command(self.name, _func)
 
     def signature(self) -> inspect.Signature:

@@ -38,8 +38,8 @@ def test_unbound_command_bind(subtests):
 
         unbound_cmd = UnboundCommand.from_callable("foo", foo)
         cmd = unbound_cmd.bind(None)
-        assert unbound_cmd._func is foo
-        assert cmd._func is foo
+        assert unbound_cmd.func is foo
+        assert cmd.func is foo
 
     with subtests.test("module"):
 
@@ -51,8 +51,8 @@ def test_unbound_command_bind(subtests):
 
         unbound_cmd = UnboundCommand.from_callable("foo", mod.module_foo)
         cmd = unbound_cmd.bind(mod)
-        assert unbound_cmd._func is mod.module_foo
-        assert cmd._func is mod.module_foo
+        assert unbound_cmd.func is mod.module_foo
+        assert cmd.func is mod.module_foo
 
     with subtests.test("class classmethod"):
 
@@ -65,9 +65,9 @@ def test_unbound_command_bind(subtests):
         unbound_cmd = UnboundCommand.from_callable("foo", drv.__class__.foo)
         cmd = unbound_cmd.bind(drv)
 
-        assert unbound_cmd._func == drv.foo
-        assert cmd._func == drv.foo
-        assert cmd._func == DriverClassmethod.foo
+        assert unbound_cmd.func == drv.foo
+        assert cmd.func == drv.foo
+        assert cmd.func == DriverClassmethod.foo
 
     with subtests.test("class staticmethod"):
 
@@ -80,9 +80,9 @@ def test_unbound_command_bind(subtests):
         unbound_cmd = UnboundCommand.from_callable("foo", drv.__class__.foo)
 
         cmd = unbound_cmd.bind(drv)
-        assert unbound_cmd._func is drv.foo
-        assert cmd._func is drv.foo
-        assert cmd._func is DriverStaticmethod.foo
+        assert unbound_cmd.func is drv.foo
+        assert cmd.func is drv.foo
+        assert cmd.func is DriverStaticmethod.foo
 
     class Driver:
         def foo(self):
@@ -94,8 +94,8 @@ def test_unbound_command_bind(subtests):
 
         cmd = unbound_cmd.bind(drv)
 
-        assert unbound_cmd._func == Driver.foo
-        assert cmd._func == drv.foo
+        assert unbound_cmd.func == Driver.foo
+        assert cmd.func == drv.foo
 
     with subtests.test("instance"):
 
@@ -104,8 +104,8 @@ def test_unbound_command_bind(subtests):
 
         cmd = unbound_cmd.bind(drv)
 
-        assert unbound_cmd._func == drv.foo
-        assert cmd._func == drv.foo
+        assert unbound_cmd.func == drv.foo
+        assert cmd.func == drv.foo
 
 
 def test_for_namespace():
@@ -169,8 +169,8 @@ def test_unbound_command_bind_nested_class(subtests):
                     )
                     assert unbound_cmd.parent_namespaces == ("nested",)
                     cmd = unbound_cmd.bind(obj)
-                    assert cmd._func == getattr(obj.nested, method.__name__)
-                    cmd._func()
+                    assert cmd.func == getattr(obj.nested, method.__name__)
+                    cmd.func()
 
                     method_mock.assert_called_once_with(*expected_args)
                     method_mock.reset_mock()
