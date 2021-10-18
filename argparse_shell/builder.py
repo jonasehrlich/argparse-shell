@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import argparse
-import inspect
-import typing as ty
 
-from . import constants, interactive, wrappers
+import docstring_parser
+
+from . import constants, interactive, utils, wrappers
 from .namespace import Namespace
 
 
@@ -50,22 +50,29 @@ def build_arg_parser_from_namespace(namespace: Namespace, program_name: str) -> 
     subparsers = parser.add_subparsers(title="sub commands", description="valid subcommands", help="")
     for name, cmd in namespace.items():
         docstring = cmd.docstring()
-        # TODO: specify arguments on the sub parsers
-        sub_cmd_parser = subparsers.add_parser(name, help=docstring)
 
+        parse_result = docstring_parser.parse(docstring)
+        sub_cmd_parser = subparsers.add_parser(name, help=parse_result.short_description or "")
+
+        docstring_params_map = {param.arg_name: param for param in parse_result.params}
         # Add each argument of the callable as a positional argument
         sig = cmd.signature()
         for parameter_name, parameter in sig.parameters.items():
             parameter_kwargs = dict()
+
+            docstring_param = docstring_params_map.get(parameter_name)
+
             if parameter.default != parameter.empty:
                 parameter_kwargs["default"] = parameter.default
-            sub_cmd_parser.add_argument(parameter_name, help=str(parameter), **parameter_kwargs)
+
+            if docstring_param and docstring_param.description:
+                parameter_help = docstring_param.description
+            else:
+                # Fallback to a default help for a parameter
+                parameter_help = utils.get_argument_help_string(parameter)
+
+            sub_cmd_parser.add_argument(
+                parameter_name, type=utils.eval_literal_value, help=parameter_help, **parameter_kwargs
+            )
         sub_cmd_parser.set_defaults(**{constants.ARGPARSE_CALLBACK_FUNCTION_NAME: wrappers.pprint_wrapper(cmd.func)})
     return parser
-
-
-
-def get_argument_help_string(func: ty.Callable) -> str:
-    """Get the help string for a command line argument"""
-    sig = inspect.signature(func)
-    return f"{func.__name__}{sig}"

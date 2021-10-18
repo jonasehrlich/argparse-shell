@@ -1,3 +1,4 @@
+import inspect
 import itertools
 
 import pytest
@@ -162,3 +163,17 @@ def test_get_command_name():
         ...
 
     assert utils.get_command_name(func2, func2.__name__) == cmd_name
+
+
+def test_get_argument_help_string():
+    def func(positional, positional_with_typehint: int, positional_with_typehint_and_default: str = "test"):
+        ...
+
+    sig = inspect.signature(func)
+
+    assert utils.get_argument_help_string(sig.parameters["positional"]) == ""
+    assert utils.get_argument_help_string(sig.parameters["positional_with_typehint"]) == "int"
+    assert (
+        utils.get_argument_help_string(sig.parameters["positional_with_typehint_and_default"])
+        == "str, defaults to 'test'"
+    )

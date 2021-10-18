@@ -1,4 +1,5 @@
 import ast
+import inspect
 import re
 import traceback
 import types
@@ -257,6 +258,27 @@ def get_command_name(func: ty.Callable, default_name: str) -> str:
 
     name = getattr(func, "__name__", default_name)
     return python_name_to_dashed(name)
+
+
+def get_argument_help_string(param: inspect.Parameter) -> str:
+    """Get a default help string for a parameter
+
+    :param param: Parameter object
+    :type param: inspect.Parameter
+    :return: String describing the parameter based on the annotation and default value
+    :rtype: str
+    """
+    help_str = ""
+
+    if param.annotation is not param.empty:
+        help_str = inspect.formatannotation(param.annotation)
+    if param.default is not param.empty:
+        if param.annotation is not param.empty:
+            help_str += ", "
+
+        help_str = f"{help_str}defaults to {param.default!r}"
+
+    return help_str
 
 
 def handle_interactive_error(exc_type: ty.Type[ty.Any], exc_value: BaseException, tb: ty.Optional[types.TracebackType]):
