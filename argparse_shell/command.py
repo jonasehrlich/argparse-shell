@@ -4,6 +4,8 @@ import inspect
 import textwrap
 import typing as ty
 
+import docstring_parser
+
 from . import utils, wrappers
 
 __all__ = ["UnsupportedCommandTypeError", "Command", "UnboundCommand"]
@@ -41,22 +43,62 @@ class _CommandBase:
             (inspect.getdoc(self.func) or f"{self.func.__name__} {self.func.__class__.__name__}").strip()
         )
 
+    def description(self) -> str:
+        """Return the description that is parsed from the docstring"""
+        parse_result = docstring_parser.parse(self.docstring())
+
+        description_components = []
+        if parse_result.short_description:
+            description_components.append(parse_result.short_description)
+        if parse_result.long_description:
+            description_components.append(parse_result.long_description)
+        return "\n\n".join(description_components)
+
     def interactive_help_method(self) -> ty.Callable[[ty.Any], None]:
         """Creates a help function to use in the interactive mode
 
         :param func: Function to create the help function for
         :type func: ty.Callable
         """
-        help_text = textwrap.dedent(
-            f"""
-            {self.name}
-            {'-'*len(self.name)}
+        parse_result = docstring_parser.parse(self.docstring())
+        command_description = self.description()
+        sig = self.signature()
 
-            {self.signature()}
+        # Get a mapping of parameters defined in the docstring
+        docstring_params = {param.arg_name: param for param in parse_result.params}
 
-            {self.docstring()}
-            """
-        )
+        usage_str = f"usage: {self.name} "
+
+        # Build parameters section for the help of this command
+        params_section_list = list()
+
+        for param_name, param in sig.parameters.items():
+            docstring_param = docstring_params.get(param_name)
+            if docstring_param:
+                # Default to the description of the parameter in the docstring
+                param_description = docstring_param.description
+            else:
+                # If we don't have a docstring of the parameter, use the kind as a description
+                param_description = param.kind.name.lower().replace("_", " ")
+            params_section_list.append(f"  {param}\t{param_description}")
+            usage_str += f"{param_name} "
+
+        if params_section_list:
+            # Insert the heading 'Parameters:' in case we have parameters
+            params_section_list.insert(0, "Parameters:")
+
+        # Build the returns section of the help of this command
+        returns_section_list = list()
+        returns_section_list.append("Returns:")
+
+        return_annotation = ty.Any if sig.return_annotation is sig.empty else sig.return_annotation
+        return_description = parse_result.returns.description if parse_result.returns else ""
+
+        returns_section_list.append(f"  {inspect.formatannotation(return_annotation)}: {return_description}")
+
+        parameters_section = "\n".join(params_section_list)
+        returns_section = "\n".join(returns_section_list)
+        help_text = f"{usage_str}\n\n{command_description}\n\n{parameters_section}\n\n{returns_section}\n"
 
         def do_help(_self):
             print(help_text)

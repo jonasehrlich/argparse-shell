@@ -44,13 +44,13 @@ class Calculator:
         return a * b
 
     def sub(self, a: float, b: float) -> float:
-        """Substract two numbers
+        """Subtract two numbers
 
         :param a: First number
         :type a: float
         :param b: Second number
         :type b: float
-        :return: Substraction of the two numbers
+        :return: Subtraction of the two numbers
         :rtype: float
         """
         return a - b
@@ -60,7 +60,6 @@ if __name__ == "__main__":
     calc = Calculator()
     shell = ArgparseShell.from_object(calc, "calc")
     shell.main()
-
 
 ```
 
@@ -73,6 +72,20 @@ calc> help
 Documented commands (type help <topic>):
 ========================================
 add  div  help  mult  sub
+calc> help add
+usage: add a b
+
+Add two numbers
+
+Parameters:
+  a: float      First number
+  b: float      Second number
+
+Returns:
+  float: Sum of two numbers
+
+calc> add 40 2
+42
 ```
 
 Run the command line interface:
@@ -91,8 +104,8 @@ sub commands:
     add               Add two numbers
     div               Divide numbers
     mult              Multiply two numbers
-    sub               Substract two numbers
-$ ./calculator.py add --help
+    sub               Subtract two numbers
+$ ./calc.py add --help
 usage: calc add [-h] a b
 
 Add two numbers
@@ -102,7 +115,9 @@ positional arguments:
   b           Second number
 
 options:
-  -h, --help  show this help message and exi
+  -h, --help  show this help message and exit
+$ ./calc.py add 38 4
+42
 ```
 
 ## Development
