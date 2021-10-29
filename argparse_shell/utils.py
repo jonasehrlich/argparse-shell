@@ -248,7 +248,7 @@ def get_command_name(func: ty.Callable, default_name: str) -> str:
 
     :param func: Callable to get the command name for
     :type func: ty.Callable
-    :param default_name: Default name to use, if the object does not have a `__name__` attribute
+    :param default_name: If no specific command name was specified
     :type default_name: str
     :return: Command name for the callable
     :rtype: str
@@ -257,8 +257,7 @@ def get_command_name(func: ty.Callable, default_name: str) -> str:
     if fixed_name and isinstance(fixed_name, str):
         return fixed_name
 
-    name = getattr(func, "__name__", default_name)
-    return python_name_to_dashed(name)
+    return python_name_to_dashed(default_name)
 
 
 def get_argument_help_string(param: inspect.Parameter) -> str:
