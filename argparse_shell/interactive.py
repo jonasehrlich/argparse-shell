@@ -1,6 +1,8 @@
 import cmd
 import typing as ty
 
+from . import utils
+
 
 class InteractiveCmd(cmd.Cmd):
     """Subclass of the base :py:class:`cmd.Cmd`.
@@ -11,6 +13,7 @@ class InteractiveCmd(cmd.Cmd):
     """
 
     _CMD_IMPLEMENTATION_PREFIX = "do_"
+    _HELP_IMPLEMENTATION_PREFIX = "help_"
     identchars = cmd.Cmd.identchars + "-"
 
     def preloop(self) -> None:
@@ -25,7 +28,7 @@ class InteractiveCmd(cmd.Cmd):
 
     def get_names(self) -> ty.List[str]:
         """
-        Overwritten get_names function to change the underscores in the command implementation function
+        Overwritten get_names method to change the underscores in the command and help implementation method
         names to dashes.
 
         :return: List of members of this class
@@ -33,8 +36,10 @@ class InteractiveCmd(cmd.Cmd):
         """
         names = list()
         for name in super().get_names():
-            if name.startswith(self._CMD_IMPLEMENTATION_PREFIX):
-                names.append(f"{self._CMD_IMPLEMENTATION_PREFIX}{name[3:].replace('_', '-')}")
+            for prefix in (self._CMD_IMPLEMENTATION_PREFIX, self._HELP_IMPLEMENTATION_PREFIX):
+                if name.startswith(prefix):
+                    names.append(f"{prefix}{utils.python_name_to_dashed(name[len(prefix):])}")
+                    break
             else:
                 names.append(name)
         return names
