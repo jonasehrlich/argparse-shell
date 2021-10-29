@@ -1,8 +1,18 @@
 import ast
 import re
+import traceback
+import types
 import typing as ty
 
 from . import constants
+
+try:
+    import rich
+    from rich.traceback import Traceback
+
+    __RICH_AVAILABLE__ = True
+except ImportError:
+    __RICH_AVAILABLE__ = False
 
 
 def split_to_literals(
@@ -247,3 +257,22 @@ def get_command_name(func: ty.Callable, default_name: str) -> str:
 
     name = getattr(func, "__name__", default_name)
     return python_name_to_dashed(name)
+
+
+def handle_interactive_error(exc_type: ty.Type[ty.Any], exc_value: BaseException, tb: ty.Optional[types.TracebackType]):
+    """Handle an error in an interactive method by printing the exception and the stack trace.
+
+    If :py:mod:`rich` is installed, its functionality will be used.
+
+    :param exc_type: Type of the exception
+    :type exc_type: ty.Type[ty.Any]
+    :param exc_value: Exception value
+    :type exc_value: BaseException
+    :param tb: Traceback of the exception
+    :type tb: ty.Optional[types.TracebackType]
+    """
+    if __RICH_AVAILABLE__:
+        rich_tb = Traceback.from_exception(exc_type, exc_value, tb, suppress=["argparse_shell"])
+        rich.print(rich_tb)
+    else:
+        traceback.print_exception(exc_type, exc_value, tb)

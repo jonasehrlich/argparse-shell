@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import pprint
+import sys
 import typing as ty
 
 from . import utils
@@ -38,7 +39,13 @@ def wrap_interactive_method(func: ty.Callable) -> ty.Callable:
     @functools.wraps(func)
     def wrapper(_, arg_string: str):
         args, kwargs = utils.parse_arg_string(arg_string)
-        func(*args, **kwargs)
+        try:
+            func(*args, **kwargs)
+        except Exception as exc:
+            # Catch all exceptions raised by interactive methods, because errors should not exit the
+            # shell
+            exc_type, _, tb = sys.exc_info()
+            utils.handle_interactive_error(exc_type, exc, tb)
         # Do not return anything from the wrapper, because this will trigger the stop of the command loop
 
     return wrapper

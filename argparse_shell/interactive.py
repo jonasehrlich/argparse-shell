@@ -44,3 +44,7 @@ class InteractiveCmd(cmd.Cmd):
         if "-" in name:
             return getattr(self, name.replace("-", "_"))
         raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+    def emptyline(self) -> bool:
+        # We don't want to execute the last command if nothing was typed
+        return False
