@@ -76,7 +76,10 @@ def test_pprint_wrapper(subtests, args_kwargs, mockreturn_10: mock.Mock):  # pyl
 
 
 def test_wrap_interactive_method(subtests, args_kwargs, mockreturn: mock.Mock):  # pylint: disable=redefined-outer-name
-    """Test that the wrapper for interactive methods, the wrapper should parse the argument string and"""
+    """
+    Test that the wrapper for interactive methods, the wrapper should parse the argument string and calls the wrapped
+    method with the arguments
+    """
     wrapped = wrappers.wrap_interactive_method(mockreturn)
 
     for args, kwargs in args_kwargs:
@@ -90,6 +93,28 @@ def test_wrap_interactive_method(subtests, args_kwargs, mockreturn: mock.Mock): 
             mockreturn.assert_called_once_with(*args, **kwargs)
 
         mockreturn.reset_mock()
+
+
+def test_wrap_interactive_method_error(subtests, capsys: pytest.CaptureFixture):
+    """Test that the wrapper for interactive methods catches exceptions and prints a traceback"""
+    error_msg = "My value error"
+
+    def raise_exc(*args, **kwargs):
+        raise ValueError(error_msg)
+
+    def raise_baseexc(*args, **kwargs):
+        raise KeyboardInterrupt()
+
+    with subtests.test("exception"):
+        wrapped = wrappers.wrap_interactive_method(raise_exc)
+        wrapped(None, "")
+        captured = capsys.readouterr()
+        assert error_msg in captured.err
+
+    with subtests.test("base exception"):
+        wrapped = wrappers.wrap_interactive_method(raise_baseexc)
+        with pytest.raises(KeyboardInterrupt):
+            wrapped(None, "")
 
 
 def test_wrap_corofunc(subtests, args_kwargs, mockreturn: mock.Mock):  # pylint: disable=redefined-outer-name

@@ -1,6 +1,7 @@
 import ast
 import inspect
 import re
+import sys
 import traceback
 import types
 import typing as ty
@@ -295,6 +296,6 @@ def handle_interactive_error(exc_type: ty.Type[ty.Any], exc_value: BaseException
     """
     if __RICH_AVAILABLE__:
         rich_tb = Traceback.from_exception(exc_type, exc_value, tb, suppress=["argparse_shell"])
-        rich.print(rich_tb)
+        rich.print(rich_tb, file=sys.stderr)
     else:
-        traceback.print_exception(exc_type, exc_value, tb)
+        traceback.print_exception(exc_type, exc_value, tb, file=sys.stderr)
