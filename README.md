@@ -5,52 +5,104 @@ Create interactive shell programs from arbitrary objects using the _argparse_ an
 ## Usage
 
 Use the `ArgparseShell.from_object` factory method to quickly create an interactive command line interface
-for an existing class.
+for an existing class. Afterwards the application can be run using the `ArgparseShell.main` method.
+See the following _calc.py_:
 
 ``` python
+#! /usr/bin/env python3
 from argparse_shell import ArgparseShell
 
-class MyDriver:
-    def foo(self, bar: int):
-        """Do foo"""
-        print("running foo, bar:", bar)
-        return bar
 
-    def foo_default(self, bar: int = 123):
-        """Do something else"""
-        print("running foo-default, bar:", bar)
-        return bar
+class Calculator:
+    """A simple calculator example"""
+
+    def add(self, a: float, b: float) -> float:
+        """Add two numbers
+
+        :param a: First number
+        :param b: Second number
+        :return: Sum of two numbers
+        """
+        return a + b
+
+    def div(self, a: float, b: float) -> float:
+        """
+        Divide numbers
+
+        :param a: First number
+        :param b: Second number
+        :return: Division of two numbers"""
+        return a / b
+
+    def mult(self, a: float, b: float) -> float:
+        """Multiply two numbers
+
+        :param a: First number
+        :param b: Second number
+        :return: Product of two numbers
+        """
+        return a * b
+
+    def sub(self, a: float, b: float) -> float:
+        """Substract two numbers
+
+        :param a: First number
+        :type a: float
+        :param b: Second number
+        :type b: float
+        :return: Substraction of the two numbers
+        :rtype: float
+        """
+        return a - b
 
 
 if __name__ == "__main__":
-    drv = MyDriver()
-    shell = ArgparseShell.from_object(drv, "mycli", intro="Welcome to mycli!")
+    calc = Calculator()
+    shell = ArgparseShell.from_object(calc, "calc")
     shell.main()
 
+
 ```
 
-Running the interactive shell:
+Run the interactive shell:
 
 ``` bash
-$ ./test/mycli.py
-Welcome!
-mycli>
+$ ./calc.py
+calc> help
+
+Documented commands (type help <topic>):
+========================================
+add  div  help  mult  sub
 ```
 
-Running the command line interface:
+Run the command line interface:
 
 ``` bash
+$ ./calc.py --help
+usage: calc [-h] {add,div,mult,sub} ...
 
-$ ./test/mycli.py --help
-usage: mycli [-h] {something,something-else} ...
+A simple calculator example
+
+options:
+  -h, --help          show this help message and exit
+
+sub commands:
+  {add,div,mult,sub}
+    add               Add two numbers
+    div               Divide numbers
+    mult              Multiply two numbers
+    sub               Substract two numbers
+$ ./calculator.py add --help
+usage: calc add [-h] a b
+
+Add two numbers
 
 positional arguments:
-  {foo,foo-default}  sub-command help
-    foo              Do foo
-    foo_default      Do something else
+  a           First number
+  b           Second number
 
-optional arguments:
-  -h, --help         show this help message and exit
+options:
+  -h, --help  show this help message and exi
 ```
 
 ## Development
@@ -60,13 +112,13 @@ Fork the repository from [Github](https://github.com/jonasehrlich/argparse-shell
 Clone your version of the repository
 
 ``` bash
-$ git clone https://github.com/<your-username>/argparse-shell
+git clone https://github.com/<your-username>/argparse-shell
 ```
 
 Install the dependencies and dev dependencies using
 
 ``` bash
-$ pip install -e .[dev]
+pip install -e .[dev]
 ```
 
 Install the [pre-commit](https://pre-commit.com/) hooks using
