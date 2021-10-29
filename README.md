@@ -24,7 +24,7 @@ class MyDriver:
 
 if __name__ == "__main__":
     drv = MyDriver()
-    shell = ArgparseShell.from_object("mycli", drv, intro="Welcome to mycli!")
+    shell = ArgparseShell.from_object(drv, "mycli", intro="Welcome to mycli!")
     shell.main()
 
 ```
