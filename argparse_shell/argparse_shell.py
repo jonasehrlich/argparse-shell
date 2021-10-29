@@ -27,7 +27,8 @@ class ArgparseShell:
         cls: ty.Type[ArgparseShell_T],
         obj: ty.Any,
         program_name: str,
-        intro: str = None,
+        intro: ty.Optional[str] = None,
+        description: ty.Optional[str] = None,
         nested_namespaces: ty.Optional[ty.Mapping[str, UnboundNamespace]] = None,
     ) -> ArgparseShell_T:
         """
@@ -42,13 +43,17 @@ class ArgparseShell:
         :type program_name: str
         :param parent_parsers: Any parent argument parsers to include, defaults to None
         :type parent_parsers: ty.Sequence[argparse.ArgumentParser], optional
+        :param description: Description of the program, the docstring of the class is used as a default
+        :type description: str, optional
         :param intro: Welcome message to print after entering interactive mode, defaults to None
         :type intro: str, optional
         :return: Instance of the ArgparseShell
         :rtype: ArgparseShell_T
         """
         namespace = Namespace.from_object(obj, nested_namespaces=nested_namespaces)
-        parser = builder.build_arg_parser_from_namespace(namespace, program_name=program_name)
+        parser = builder.build_arg_parser_from_namespace(
+            namespace, program_name=program_name, description=description or inspect.getdoc(obj)
+        )
         interactive = builder.build_interactive_shell_from_namespace(namespace, prompt=f"{program_name}> ", intro=intro)
         return cls(parser, interactive)
 
