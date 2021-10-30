@@ -6,7 +6,7 @@ import inspect
 import sys
 import typing as ty
 
-from . import builder, constants, utils
+from . import builder, constants
 from .namespace import Namespace, UnboundNamespace
 
 
