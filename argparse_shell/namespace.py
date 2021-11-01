@@ -77,33 +77,33 @@ class UnboundNamespace(_NamespaceBase[UnboundCommand]):
             detect_obj = obj.__class__
             is_instance = True
 
-        for name, value in inspect.getmembers(detect_obj):
-            if not utils.is_shell_cmd(value, name):
+        for name, nested_command in inspect.getmembers(detect_obj):
+            if not utils.is_shell_cmd(nested_command, name):
                 continue
 
             nested_namespace = nested_namespaces.pop(name, None)
             if nested_namespace:
-                for cmd_name, value in nested_namespace.items():
-                    namespace_cmd = value.for_namespace(name)
+                for cmd_name, nested_command in nested_namespace.items():
+                    namespace_cmd = nested_command.for_namespace(name)
                     namespace[namespace_cmd.name] = namespace_cmd
                 continue
 
-            cmd_name = utils.get_command_name(value, name)
+            cmd_name = utils.get_command_name(nested_command, name)
             try:
-                namespace[cmd_name] = UnboundCommand.from_callable(cmd_name, value)
+                namespace[cmd_name] = UnboundCommand.from_callable(cmd_name, nested_command)
             except UnsupportedCommandTypeError:
                 pass
 
         if nested_namespaces and is_instance:
             # We have still nested namespaces left and the object argument was not a class or a module,
-            # check if the namespaces exist in the object and were defined during initialization
+            # check if the namespaces exist in the object and were defined during initialization of the class
             nested_namespaces_copy = dict(nested_namespaces)
             instance_attributes = set(dir(obj))
             for name, nested_namespace in nested_namespaces_copy.items():
                 if name in instance_attributes:
-                    for cmd_name, value in nested_namespace.items():
-                        namespace_cmd = value.for_namespace(name)
-                        namespace[namespace_cmd.name] = value.for_namespace(name)
+                    for cmd_name, nested_command in nested_namespace.items():
+                        namespace_cmd = nested_command.for_namespace(name)
+                        namespace[namespace_cmd.name] = nested_command.for_namespace(name)
                     nested_namespaces.pop(name, None)
 
         if nested_namespaces:

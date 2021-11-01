@@ -156,17 +156,17 @@ class UnboundCommand(_CommandBase):
             raise UnsupportedCommandTypeError(f"{func.__class__.__name__} is not a supported command type")
         return cls(name, wrapped)
 
-    def for_namespace(self: UnboundCommand_T, namespace: str) -> UnboundCommand_T:
-        """Create the command for a namespace
+    def for_namespace(self: UnboundCommand_T, namespace_name: str) -> UnboundCommand_T:
+        """Create a new command object for a namespace.
 
-        :param namespace: Namespace the new command should be located in
-        :type namespace: str
+        :param namespace_name: Namespace the new command should be located in
+        :type namespace_name: str
         :return: New command with an updated namespace chain
         :rtype: UnboundCommand_T
         """
-        namespace_prefix = utils.python_name_to_dashed(namespace)
+        namespace_prefix = utils.python_name_to_dashed(namespace_name)
 
-        return self.__class__(f"{namespace_prefix}-{self.name}", self.func, (namespace,) + self.parent_namespaces)
+        return self.__class__(f"{namespace_prefix}-{self.name}", self.func, (namespace_name,) + self.parent_namespaces)
 
     def bind(self, obj: ty.Any) -> Command:
         """
