@@ -1,7 +1,7 @@
 import types
 from unittest import mock
 
-from argparse_shell.command import UnboundCommand
+from argparse_shell.command import UnboundCommand, WrappedCommandType
 
 
 def test_command_get_docstring():
@@ -10,7 +10,7 @@ def test_command_get_docstring():
     def no_docstring():
         ...
 
-    assert UnboundCommand("test", no_docstring).docstring() == "no_docstring function"
+    assert UnboundCommand("test", no_docstring, WrappedCommandType.FUNCTION).docstring() == "no_docstring function"
 
     expected_docstring = "Hello this is a docstring\nwhich should get dedented"
 
@@ -18,7 +18,7 @@ def test_command_get_docstring():
         """Hello this is a docstring
         which should get dedented"""
 
-    assert UnboundCommand("Test", with_docstring).docstring() == expected_docstring
+    assert UnboundCommand("Test", with_docstring, WrappedCommandType.FUNCTION).docstring() == expected_docstring
 
     def with_docstring2():
         """
@@ -26,7 +26,7 @@ def test_command_get_docstring():
         which should get dedented
         """
 
-    assert UnboundCommand("Test", with_docstring2).docstring() == expected_docstring
+    assert UnboundCommand("Test", with_docstring2, WrappedCommandType.FUNCTION).docstring() == expected_docstring
 
 
 def test_unbound_command_bind(subtests):

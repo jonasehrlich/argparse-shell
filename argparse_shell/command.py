@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import enum
+import functools
 import inspect
 import textwrap
 import typing as ty
@@ -28,7 +30,7 @@ class _CommandBase:
         self.func = func
 
     def __repr__(self) -> str:
-        return repr(self.func)
+        return f"Command({repr(self.func)})"
 
     def __call__(self, *args: ty.Any, **kwargs: ty.Any) -> ty.Any:
         return self.func(*args, **kwargs)
@@ -125,10 +127,28 @@ class _CommandBase:
         return f"help_{self._pythonize_name()}"
 
 
+class WrappedCommandType(enum.Enum):
+    """Type of the command that is wrapped"""
+
+    FUNCTION = enum.auto()
+    METHOD = enum.auto()
+    GENERATOR = enum.auto()
+    ASYNCGENERATOR = enum.auto()
+    DATADESCRIPTOR = enum.auto()
+    COROUTINEFUNCTION = enum.auto()
+
+
 class UnboundCommand(_CommandBase):
-    def __init__(self, name: str, func: ty.Callable, parent_namespaces: ty.Sequence[str] = tuple()) -> None:
+    def __init__(
+        self,
+        name: str,
+        func: ty.Callable,
+        wrapped_command_type: WrappedCommandType,
+        parent_namespaces: ty.Sequence[str] = tuple(),
+    ) -> None:
         super().__init__(name, func)
         self.parent_namespaces: ty.Tuple[str, ...] = tuple(parent_namespaces)
+        self._wrapped_command_type = wrapped_command_type
 
     @classmethod
     def from_callable(cls: ty.Type[UnboundCommand_T], name: str, func: ty.Callable) -> UnboundCommand_T:
@@ -146,15 +166,19 @@ class UnboundCommand(_CommandBase):
         """
         if inspect.isdatadescriptor(func):
             wrapped = wrappers.wrap_datadescriptor(func)
+            cmd_type = WrappedCommandType.DATADESCRIPTOR
         elif inspect.iscoroutinefunction(func):
             wrapped = wrappers.wrap_corofunc(func)
+            cmd_type = WrappedCommandType.COROUTINEFUNCTION
         elif inspect.ismethod(func):
             wrapped = func
+            cmd_type = WrappedCommandType.METHOD
         elif inspect.isfunction(func):
             wrapped = func
+            cmd_type = WrappedCommandType.FUNCTION
         else:
             raise UnsupportedCommandTypeError(f"{func.__class__.__name__} is not a supported command type")
-        return cls(name, wrapped)
+        return cls(name, wrapped, cmd_type)
 
     def for_namespace(self: UnboundCommand_T, namespace_name: str) -> UnboundCommand_T:
         """Create a new command object for a namespace.
@@ -166,7 +190,12 @@ class UnboundCommand(_CommandBase):
         """
         namespace_prefix = utils.python_name_to_dashed(namespace_name)
 
-        return self.__class__(f"{namespace_prefix}-{self.name}", self.func, (namespace_name,) + self.parent_namespaces)
+        return self.__class__(
+            f"{namespace_prefix}-{self.name}",
+            self.func,
+            self._wrapped_command_type,
+            (namespace_name,) + self.parent_namespaces,
+        )
 
     def bind(self, obj: ty.Any) -> Command:
         """
@@ -186,8 +215,10 @@ class UnboundCommand(_CommandBase):
             # The method is already bound, there's nothing to do anymore
             return Command(self.name, self.func)
 
-        # TODO: handle if we have a datadescriptor wrapper
-        _func = getattr(obj, self.func.__name__)
+        if self._wrapped_command_type == WrappedCommandType.DATADESCRIPTOR:
+            _func = functools.partial(self.func, obj)
+        else:
+            _func = getattr(obj, self.func.__name__)
         return Command(self.name, _func)
 
     def signature(self) -> inspect.Signature:
