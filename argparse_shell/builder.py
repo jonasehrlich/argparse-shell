@@ -23,16 +23,10 @@ def build_interactive_shell_from_namespace(
     :return: Subclass of InteractiveCmd
     :rtype: cmd.Cmd
     """
-    class_namespace = dict()
-    for _, cmd in namespace.items():
-
-        class_namespace[cmd.interactive_method_name] = cmd.interactive_method()
-        class_namespace[cmd.interactive_help_method_name] = cmd.interactive_help_method()
-    class_namespace["prompt"] = prompt
-    class_namespace["intro"] = intro
-
-    interactive_class = type("InteractiveCmdShell", (interactive.InteractiveCmd,), class_namespace)
-    return interactive_class()
+    shell = interactive.InteractiveCmd(namespace)
+    shell.intro = intro
+    shell.prompt = prompt
+    return shell
 
 
 def build_arg_parser_from_namespace(

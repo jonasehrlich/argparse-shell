@@ -37,7 +37,7 @@ def wrap_interactive_method(func: ty.Callable) -> ty.Callable:
     """
 
     @functools.wraps(func)
-    def wrapper(_, arg_string: str):
+    def wrapper(arg_string: str):
         args, kwargs = utils.parse_arg_string(arg_string)
         try:
             func(*args, **kwargs)

@@ -1,20 +1,23 @@
-import cmd
+from cmd import Cmd
 import typing as ty
 
-from . import utils
+from argparse_shell.namespace import Namespace
 
 
-class InteractiveCmd(cmd.Cmd):
+class InteractiveCmd(Cmd):
     """Subclass of the base :py:class:`cmd.Cmd`.
 
-    This subclass makes the commands default to use dashes instead of underscores. This is done by doing three changes:
-
-    * Remove the dash from the word delimiters in the readline module
+    This class wraps a :py:class:`~argparse_shell.namespace.Namespace` and makes its commands available in an
+    interactive shell.
     """
 
     _CMD_IMPLEMENTATION_PREFIX = "do_"
     _HELP_IMPLEMENTATION_PREFIX = "help_"
-    identchars = cmd.Cmd.identchars + "-"
+    identchars = Cmd.identchars + "-"
+
+    def __init__(self, namespace: Namespace, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._namespace = namespace
 
     def preloop(self) -> None:
         """Pre loop hook. Remove dashes from the word delimiters in the `readline` module"""
@@ -28,26 +31,25 @@ class InteractiveCmd(cmd.Cmd):
 
     def get_names(self) -> ty.List[str]:
         """
-        Overwritten get_names method to change the underscores in the command and help implementation method
-        names to dashes.
-
-        :return: List of members of this class
-        :rtype: ty.List[str]
+        Get a list of all command and help method implementations in the namsepace nested in this class
         """
         names = list()
-        for name in super().get_names():
-            for prefix in (self._CMD_IMPLEMENTATION_PREFIX, self._HELP_IMPLEMENTATION_PREFIX):
-                if name.startswith(prefix):
-                    names.append(f"{prefix}{utils.python_name_to_dashed(name[len(prefix):])}")
-                    break
-            else:
-                names.append(name)
+        for cmd in self._namespace.values():
+            names.append(cmd.interactive_method_name)
+            names.append(cmd.interactive_help_method_name)
         return names
 
     def __getattr__(self, name: str):
         """Fallback for attribute accesses, to replace dashes with underscores"""
-        if "-" in name:
-            return getattr(self, name.replace("-", "_"))
+        for prefix in (self._CMD_IMPLEMENTATION_PREFIX, self._HELP_IMPLEMENTATION_PREFIX):
+            if name.startswith(prefix):
+                try:
+                    prefix_len = len(prefix)
+                    cmd = self._namespace[name[prefix_len:]]
+                    return cmd.get_interactive_method_for_prefix(prefix)
+                except (KeyError, ValueError) as exc:
+                    raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'") from exc
+
         raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
     def emptyline(self) -> bool:

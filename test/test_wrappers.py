@@ -84,10 +84,9 @@ def test_wrap_interactive_method(subtests, args_kwargs, mockreturn: mock.Mock): 
 
     for args, kwargs in args_kwargs:
         with subtests.test(args=args, kwargs=kwargs):
-            obj = object()
             arg_string = " ".join(str(arg) for arg in args)
             kwarg_string = " ".join(f"{key}={value}" for key, value in kwargs.items())
-            result = wrapped(obj, f"{arg_string} {kwarg_string}")
+            result = wrapped(f"{arg_string} {kwarg_string}")
 
             assert result is None
             mockreturn.assert_called_once_with(*args, **kwargs)
@@ -107,14 +106,14 @@ def test_wrap_interactive_method_error(subtests, capsys: pytest.CaptureFixture):
 
     with subtests.test("exception"):
         wrapped = wrappers.wrap_interactive_method(raise_exc)
-        wrapped(None, "")
+        wrapped("")
         captured = capsys.readouterr()
         assert error_msg in captured.err
 
     with subtests.test("base exception"):
         wrapped = wrappers.wrap_interactive_method(raise_baseexc)
         with pytest.raises(KeyboardInterrupt):
-            wrapped(None, "")
+            wrapped("")
 
 
 def test_wrap_corofunc(subtests, args_kwargs, mockreturn: mock.Mock):  # pylint: disable=redefined-outer-name
