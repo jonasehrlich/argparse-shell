@@ -6,6 +6,13 @@ import typing as ty
 
 from . import utils
 
+try:
+    import rich.pretty
+
+    __RICH_AVAILABLE__ = True
+except ImportError:
+    __RICH_AVAILABLE__ = False
+
 
 def pprint_wrapper(func: ty.Callable, stream: ty.TextIO) -> ty.Callable:
     """Get a wrapper around a function that pretty-prints the output before returning
@@ -22,8 +29,11 @@ def pprint_wrapper(func: ty.Callable, stream: ty.TextIO) -> ty.Callable:
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
         if result is not None:
-            output = pprint.pformat(result)
-            stream.write(output)
+            if __RICH_AVAILABLE__:
+                output = rich.pretty.pprint(result)
+            else:
+                output = pprint.pformat(result)
+                stream.write(output)
         return result
 
     return wrapper

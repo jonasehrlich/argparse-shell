@@ -22,7 +22,7 @@ def split_to_literals(
     sep: str = " ",
     pairs: ty.Sequence[ty.Tuple[str, str]] = (("(", ")"), ("[", "]"), ("{", "}")),
     quotes: ty.Sequence[str] = "\"'",
-) -> str:
+) -> ty.Generator[str, None, None]:
     """
     Split a string of Python literals into multiple literals.
 
