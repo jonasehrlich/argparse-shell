@@ -30,6 +30,9 @@ class ArgparseShell:
         intro: ty.Optional[str] = None,
         description: ty.Optional[str] = None,
         nested_namespaces: ty.Optional[ty.Mapping[str, UnboundNamespace]] = None,
+        *,
+        stdin: ty.Optional[ty.TextIO] = None,
+        stdout: ty.Optional[ty.TextIO] = None,
     ) -> ArgparseShell_T:
         """
         Factory method to create a ArgparseShell from an arbitrary object.
@@ -47,14 +50,21 @@ class ArgparseShell:
         :type description: str, optional
         :param intro: Welcome message to print after entering interactive mode, defaults to None
         :type intro: str, optional
+        :param stdin: TextIOWrapper to use as the stdin for the interactive shell, defaults to None
+        :type stdin: ty.Optional[io.TextIOWrapper], optional
+        :param stdout: TextIOWrapper to use as the stdout for the interactive shell, defaults to None
+        :type stdout: ty.Optional[io.TextIOWrapper], optional
         :return: Instance of the ArgparseShell
         :rtype: ArgparseShell_T
+
         """
         namespace = Namespace.from_object(obj, nested_namespaces=nested_namespaces)
         parser = builder.build_arg_parser_from_namespace(
             namespace, program_name=program_name, description=description or inspect.getdoc(obj)
         )
-        interactive = builder.build_interactive_shell_from_namespace(namespace, prompt=f"{program_name}> ", intro=intro)
+        interactive = builder.build_interactive_shell_from_namespace(
+            namespace, prompt=f"{program_name}> ", intro=intro, stdin=stdin, stdout=stdout
+        )
         return cls(parser, interactive)
 
     def main(self, argv: ty.Sequence[str] = None):

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import io
+import sys
 
 import docstring_parser
 import typing as ty
@@ -10,7 +12,12 @@ from .namespace import Namespace
 
 
 def build_interactive_shell_from_namespace(
-    namespace: Namespace, prompt: str = "cli>", intro: str = None
+    namespace: Namespace,
+    prompt: str = "cli>",
+    intro: str = None,
+    *,
+    stdin: ty.Optional[ty.TextIO] = None,
+    stdout: ty.Optional[ty.TextIO] = None,
 ) -> interactive.InteractiveCmd:
     """Build a interactive shell from a namespace definition
 
@@ -20,10 +27,14 @@ def build_interactive_shell_from_namespace(
     :type prompt: str, optional
     :param intro: Intro, or welcome message to print after interactive shell start, defaults to None
     :type intro: str, optional
-    :return: Subclass of InteractiveCmd
-    :rtype: cmd.Cmd
+    :param stdin: TextIOWrapper to use as the stdin for the interactive shell, defaults to None
+    :type stdin: ty.Optional[ty.TextIO], optional
+    :param stdout: TextIOWrapper to use as the stdout for the interactive shell, defaults to None
+    :type stdout: ty.Optional[ty.TextIO], optional
+    :return: InteractiveCmd
+    :rtype: interactive.InteractiveCmd
     """
-    shell = interactive.InteractiveCmd(namespace)
+    shell = interactive.InteractiveCmd(namespace, stdin=stdin, stdout=stdout)
     shell.intro = intro
     shell.prompt = prompt
     return shell
@@ -75,5 +86,7 @@ def build_arg_parser_from_namespace(
             sub_cmd_parser.add_argument(
                 parameter_name, type=utils.eval_literal_value, help=parameter_help, **parameter_kwargs
             )
-        sub_cmd_parser.set_defaults(**{constants.ARGPARSE_CALLBACK_FUNCTION_NAME: wrappers.pprint_wrapper(cmd.func)})
+        sub_cmd_parser.set_defaults(
+            **{constants.ARGPARSE_CALLBACK_FUNCTION_NAME: wrappers.pprint_wrapper(cmd.func, sys.stdout)}
+        )
     return parser

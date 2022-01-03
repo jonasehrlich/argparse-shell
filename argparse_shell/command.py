@@ -3,6 +3,7 @@ from __future__ import annotations
 import enum
 import functools
 import inspect
+import sys
 import textwrap
 import typing as ty
 
@@ -191,21 +192,6 @@ class Command(_CommandBase):
 
     def __init__(self, name: str, func: ty.Callable) -> None:
         super().__init__(name, func)
-        self._interactive_method = None
-        self._interactive_help_method = None
-
-    @property
-    def interactive_help_method(self) -> InteractiveHelpMethod:
-        """Get the interactive help method to be called by the interactive shell"""
-        if self._interactive_help_method is None:
-            self._interactive_help_method = self._get_interactive_help_method()
-        return self._interactive_help_method
-
-    @property
-    def interactive_method(self) -> InteractiveCommandMethod:
-        if self._interactive_method is None:
-            self._interactive_method = self._get_interactive_method()
-        return self._interactive_method
 
     @ty.overload
     def get_interactive_method_for_prefix(self, prefix: ty.Literal["help_"]) -> InteractiveHelpMethod:
@@ -216,28 +202,32 @@ class Command(_CommandBase):
         ...
 
     def get_interactive_method_for_prefix(
-        self, prefix: str
+        self, prefix: ty.Union[ty.Literal["help_"], ty.Literal["do_"]], stream: ty.TextIO = sys.stdout
     ) -> ty.Union[InteractiveCommandMethod, InteractiveHelpMethod]:
         """Get the interactive method for a prefix.
 
         This method returns either the :py:attr:`Command.interactive_method` or the
         :py:attr:`Command.interactive_help_method` depending on the prefix value
 
-        :param prefix: Prefix string of the command
-        :type prefix: str
+        :param prefix: Prefix string of the command according to the definition in the cmd module
+        :type prefix: ty.Union[ty.Literal["help_"], ty.Literal["do_"]]
+        :param stream: Stream to use as an output, defaults to sys.stdout
+        :type stream: ty.TextIO
         :raises ValueError: Raised if the prefix is unknown
         :return: Interactive method for a prefix for this command
         :rtype: ty.Union[InteractiveCommandMethod, InteractiveHelpMethod]
         """
         if prefix == self._INTERACTIVE_METHOD_PREFIX:
-            return self.interactive_method
+            return self._get_interactive_method(stream)
         if prefix == self._INTERACTIVE_HELP_METHOD_PREFIX:
-            return self.interactive_help_method
+            return self._get_interactive_help_method(stream)
         raise ValueError(f"Unknown prefix '{prefix}'")
 
-    def _get_interactive_help_method(self) -> ty.Callable[[], None]:
+    def _get_interactive_help_method(self, stream: ty.TextIO = sys.stdout) -> ty.Callable[[], None]:
         """Creates a help function to use in the interactive mode
 
+        :param stream: Stream to write the return value to, defaults to sys.stdout
+        :type stream: ty.TextIO, optional
         :param func: Function to create the help function for
         :type func: ty.Callable
         """
@@ -282,11 +272,18 @@ class Command(_CommandBase):
         help_text = f"{usage_str}\n\n{command_description}\n\n{parameters_section}\n\n{returns_section}\n"
 
         def do_help():
-            print(help_text)
+            stream.write(help_text)
 
-        do_help.__name__ = f"help_{self.func.__name__}"
+        do_help.__name__ = f"{self._INTERACTIVE_HELP_METHOD_PREFIX}{self.func.__name__}"
         return do_help
 
-    def _get_interactive_method(self) -> ty.Callable[[str], None]:
-        """Get the method wrapped for an interactive shell"""
-        return wrappers.wrap_interactive_method(wrappers.pprint_wrapper(self.func))
+    def _get_interactive_method(self, stream: ty.TextIO = sys.stdout) -> ty.Callable[[str], None]:
+        """Get the method wrapped for an interactive shell. This includes adding parsing of the command string to
+        Python arguments and printing of results to a stream
+
+        :param stream: Stream to write the return value to, defaults to sys.stdout
+        :type stream: ty.TextIO, optional
+        :return: The method with automated command string parsing
+        :rtype: ty.Callable[[str], None]
+        """
+        return wrappers.wrap_interactive_method(wrappers.pprint_wrapper(self.func, stream))

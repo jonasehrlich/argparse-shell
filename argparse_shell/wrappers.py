@@ -7,14 +7,23 @@ import typing as ty
 from . import utils
 
 
-def pprint_wrapper(func: ty.Callable) -> ty.Callable:
-    """Get a wrapper around a function that pretty-prints the output before returning"""
+def pprint_wrapper(func: ty.Callable, stream: ty.TextIO) -> ty.Callable:
+    """Get a wrapper around a function that pretty-prints the output before returning
+
+    :param func: Callable to wrap
+    :type func: ty.Callable
+    :param stream: Stream to write the return value of the callable to
+    :type stream: ty.TextIO
+    :return: Wrapped function
+    :rtype: ty.Callable
+    """
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
         if result is not None:
-            pprint.pprint(result)
+            output = pprint.pformat(result)
+            stream.write(output)
         return result
 
     return wrapper

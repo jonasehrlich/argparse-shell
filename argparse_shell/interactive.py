@@ -48,7 +48,7 @@ class InteractiveCmd(Cmd):
 
     def get_names(self) -> ty.List[str]:
         """
-        Get a list of all command and help method implementations in the namsepace nested in this class
+        Get a list of all command and help method implementations in the namespace nested in this class
         """
         names = list()
         for cmd in self._namespace.values():
@@ -63,7 +63,7 @@ class InteractiveCmd(Cmd):
                 try:
                     prefix_len = len(prefix)
                     cmd = self._namespace[name[prefix_len:]]
-                    return cmd.get_interactive_method_for_prefix(prefix)
+                    return cmd.get_interactive_method_for_prefix(prefix, self.stdout)
                 except (KeyError, ValueError) as exc:
                     raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'") from exc
 

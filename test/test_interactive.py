@@ -1,14 +1,14 @@
+import functools
+import sys
 import typing as ty
 from unittest import mock
 
 import pytest
+
 from argparse_shell.interactive import InteractiveCmd
-from argparse_shell.namespace import Namespace, Command
-import functools
+from argparse_shell.namespace import Command, Namespace
 
 cmd_name = "some-action"
-
-help_mock = functools.partial(print, "help", cmd_name)
 
 
 def return_all(*args):
@@ -18,7 +18,7 @@ def return_all(*args):
 @pytest.fixture()
 def namespace():
     cmd = Command(cmd_name, mock.Mock(side_effect=return_all))
-    cmd._interactive_help_method = mock.Mock(side_effect=help_mock)
+
     namespace_ = Namespace(**{cmd_name: cmd})
     return namespace_
 
@@ -27,7 +27,7 @@ def get_argstr(*args: ty.Any):
     return " ".join(str(arg) for arg in args)
 
 
-def test_command(namespace, subtests, capsys):
+def test_command(namespace, subtests):
     with subtests.test("no args"):
         shell = InteractiveCmd(namespace)
         shell.onecmd(cmd_name)
@@ -52,8 +52,11 @@ def test_interactive_command_not_found(namespace, subtests, capsys: pytest.Captu
             assert captured.out == f"*** Unknown syntax: {wrong_command}\n"
 
 
-def test_dashed_command_help(namespace, capsys: pytest.CaptureFixture):
+def test_dashed_command_help(namespace, capsys):
     """Test that the interactive help is printed correctly for dashed commands"""
+    namespace[cmd_name]._get_interactive_help_method = mock.Mock(
+        return_value=functools.partial(sys.stdout.write, f"help {cmd_name}\n")
+    )
     shell = InteractiveCmd(namespace)
     shell.onecmd("help " + cmd_name)
     captured = capsys.readouterr()
@@ -63,4 +66,10 @@ def test_dashed_command_help(namespace, capsys: pytest.CaptureFixture):
 def test_command_complete(namespace, capsys: pytest.CaptureFixture):
     """Test completion behavior for commands"""
     shell = InteractiveCmd(namespace)
-    assert shell.completenames(cmd_name[:3]) == [cmd_name]
+    assert shell.completenames(cmd_name[: len(shell._CMD_IMPLEMENTATION_PREFIX)]) == [cmd_name]
+
+
+def test_help_complete(namespace, capsys: pytest.CaptureFixture):
+    """Test completion behavior for help"""
+    shell = InteractiveCmd(namespace)
+    assert shell.completenames(cmd_name[: len(shell._CMD_IMPLEMENTATION_PREFIX)]) == [cmd_name]

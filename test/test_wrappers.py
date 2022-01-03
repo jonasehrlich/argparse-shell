@@ -59,20 +59,29 @@ def args_kwargs() -> ty.Iterable[ty.Tuple[ty.Tuple[ty.Any, ...], ty.Dict[ty.Any,
     return itertools.product(args_options, kwargs_options)
 
 
-def test_pprint_wrapper(subtests, args_kwargs, mockreturn_10: mock.Mock):  # pylint: disable=redefined-outer-name
+@pytest.fixture
+def mockstream() -> ty.TextIO:
+    """Return a mock of a stream object"""
+    m = mock.Mock()
+    m.write = mock.Mock()
+    return m
+
+
+def test_pprint_wrapper(
+    subtests, args_kwargs, mockreturn_10: mock.Mock, mockstream: mock.Mock
+):  # pylint: disable=redefined-outer-name
     """Test that functions wrapped into the pprint_wrapper call pprint.pprint with the result and return it"""
 
-    wrapped = wrappers.pprint_wrapper(mockreturn_10)
-    with mock.patch("pprint.pprint") as pprint_mock:
-        for args, kwargs in args_kwargs:
-            with subtests.test(args=args, kwargs=kwargs):
-                result = wrapped(*args, **kwargs)
-                assert result == 10
-                mockreturn_10.assert_called_once_with(*args, **kwargs)
-                pprint_mock.assert_called_once_with(10)
+    wrapped = wrappers.pprint_wrapper(mockreturn_10, mockstream)
+    for args, kwargs in args_kwargs:
+        with subtests.test(args=args, kwargs=kwargs):
+            result = wrapped(*args, **kwargs)
+            assert result == 10
+            mockreturn_10.assert_called_once_with(*args, **kwargs)
+            mockstream.write.assert_called_once_with(str(10))
 
-            pprint_mock.reset_mock()
-            mockreturn_10.reset_mock()
+        mockstream.reset_mock()
+        mockreturn_10.reset_mock()
 
 
 def test_wrap_interactive_method(subtests, args_kwargs, mockreturn: mock.Mock):  # pylint: disable=redefined-outer-name
