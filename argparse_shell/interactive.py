@@ -15,9 +15,26 @@ class InteractiveCmd(Cmd):
     _HELP_IMPLEMENTATION_PREFIX = "help_"
     identchars = Cmd.identchars + "-"
 
-    def __init__(self, namespace: Namespace, *args, **kwargs) -> None:
+    def __init__(self, namespace: Namespace, stop_on_eof: bool = True, *args, **kwargs) -> None:
+        """Initialize an interactive shell working with a namespace instead of subclassing.
+
+        The interactive shell will use all commands consisting of multiple words as dashes.
+
+        :param namespace: Definition of a namespace containing commands to
+        :type namespace: Namespace
+        :param stop_on_eof: Whether to stop when a EOF (Ctrl + D) is received, defaults to True
+        :type stop_on_eof: bool, optional
+        """
         super().__init__(*args, **kwargs)
+
         self._namespace = namespace
+        if stop_on_eof:
+
+            def do_eof(_):
+                self.stdout.write("EOF: exit\n")
+                return True
+
+            self.do_EOF = do_eof
 
     def preloop(self) -> None:
         """Pre loop hook. Remove dashes from the word delimiters in the `readline` module"""
