@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 import types
 import typing as ty
 
 import pytest
+
 from argparse_shell import ArgparseShell
+from argparse_shell.testing import ArgparseShellRunner
 
 T = ty.TypeVar("T", int, float, str, bytes)
 
@@ -39,8 +43,18 @@ class Calculator:
 
 
 calculator_module = types.ModuleType("calculator")
-setattr(calculator_module, "add", lambda a, b: a + b)
-setattr(calculator_module, "div", lambda a, b: a / b)
+
+
+def add(a, b):
+    return a + b
+
+
+def div(a, b):
+    return a / b
+
+
+setattr(calculator_module, "add", add)
+setattr(calculator_module, "div", div)
 
 
 def test_cli_instance(capsys: pytest.CaptureFixture, subtests):
@@ -84,3 +98,60 @@ def test_cli_module(capsys: pytest.CaptureFixture, subtests):
     with subtests.test("div0"):
         with pytest.raises(ZeroDivisionError):
             shell.main(["div", str(a), "0"])
+
+
+@pytest.mark.skip
+def test_interactive_instance(subtests, capsys: pytest.CaptureFixture):
+    """Test startup of the interactive shell with a driver instance"""
+    drv = Calculator()
+    shell = ArgparseShell.from_object(drv, "calc")
+    a = 1
+    b = 5
+    with subtests.test("add"):
+
+        shell = ArgparseShell.from_object(drv, "calc")
+        result = ArgparseShellRunner(shell).invoke_interactive("add", a, b)
+
+        result.check()
+
+    with subtests.test("div"):
+
+        shell = ArgparseShell.from_object(drv, "calc")
+        result = ArgparseShellRunner(shell).invoke_interactive("div", a, b)
+
+        result.check()
+
+    with subtests.test("div0"):
+        with pytest.raises(ZeroDivisionError):
+
+            shell = ArgparseShell.from_object(drv, "calc")
+            shell = ArgparseShell.from_object(calculator_module, "calc")
+            result = ArgparseShellRunner(shell).invoke_interactive("div", a, 0)
+            result.check()
+
+
+@pytest.mark.skip
+def test_interactive_module(subtests, capsys: pytest.CaptureFixture):
+    """Test startup of the interactive shell with a driver module"""
+    a = 1
+    b = 5
+    # TODO: assert for output, how to pass the stdout to the pprint_wrapper
+    with subtests.test("add"):
+
+        shell = ArgparseShell.from_object(calculator_module, "calc")
+        result = ArgparseShellRunner(shell).invoke_interactive("add", a, b)
+
+        result.check()
+
+    with subtests.test("div"):
+        shell = ArgparseShell.from_object(calculator_module, "calc")
+        result = ArgparseShellRunner(shell).invoke_interactive("div", a, b)
+
+        result.check()
+
+    with subtests.test("div0"):
+        with pytest.raises(ZeroDivisionError):
+
+            shell = ArgparseShell.from_object(calculator_module, "calc")
+            result = ArgparseShellRunner(shell).invoke_interactive("div", a, 0)
+            result.check()
