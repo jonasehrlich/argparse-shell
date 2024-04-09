@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "argparse-shell"
-version = "0.1.0"
+version = "0.1.1"
 description = "Create interactive shell programs from arbitrary objects using the argparse and cmd modules"
 authors = ["Jonas Ehrlich <jonas.ehrlich@umsemi.com>"]
 license = "MIT"
