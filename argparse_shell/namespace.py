@@ -5,7 +5,7 @@ import inspect
 import typing as ty
 
 from . import utils
-from .command import Command, UnsupportedCommandTypeError, UnboundCommand
+from .command import Command, UnboundCommand, UnsupportedCommandTypeError
 
 __all__ = ["Namespace", "UnboundNamespace"]
 

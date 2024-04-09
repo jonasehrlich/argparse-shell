@@ -194,12 +194,10 @@ class Command(_CommandBase):
         super().__init__(name, func)
 
     @ty.overload
-    def get_interactive_method_for_prefix(self, prefix: ty.Literal["help_"]) -> InteractiveHelpMethod:
-        ...
+    def get_interactive_method_for_prefix(self, prefix: ty.Literal["help_"]) -> InteractiveHelpMethod: ...
 
     @ty.overload
-    def get_interactive_method_for_prefix(self, prefix: ty.Literal["do_"]) -> InteractiveCommandMethod:
-        ...
+    def get_interactive_method_for_prefix(self, prefix: ty.Literal["do_"]) -> InteractiveCommandMethod: ...
 
     def get_interactive_method_for_prefix(
         self, prefix: ty.Union[ty.Literal["help_"], ty.Literal["do_"]], stream: ty.TextIO = sys.stdout

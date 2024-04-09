@@ -2,6 +2,7 @@ import types
 import typing as ty
 
 import pytest
+
 from argparse_shell import ArgparseShell
 
 T = ty.TypeVar("T", int, float, str, bytes)
@@ -39,8 +40,8 @@ class Calculator:
 
 
 calculator_module = types.ModuleType("calculator")
-setattr(calculator_module, "add", lambda a, b: a + b)
-setattr(calculator_module, "div", lambda a, b: a / b)
+calculator_module.add = lambda a, b: a + b
+calculator_module.div = lambda a, b: a / b
 
 
 def test_cli_instance(capsys: pytest.CaptureFixture, subtests):

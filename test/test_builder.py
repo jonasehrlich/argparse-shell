@@ -1,6 +1,6 @@
 from unittest import mock
 
-from argparse_shell import builder, namespace, command
+from argparse_shell import builder, command, namespace
 
 
 def test_build_interactive_shell_from_namespace():

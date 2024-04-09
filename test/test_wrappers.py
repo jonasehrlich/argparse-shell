@@ -6,6 +6,7 @@ import typing as ty
 from unittest import mock
 
 import pytest
+
 from argparse_shell import wrappers
 
 

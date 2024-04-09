@@ -1,5 +1,5 @@
-from cmd import Cmd
 import typing as ty
+from cmd import Cmd
 
 from argparse_shell.namespace import Namespace
 

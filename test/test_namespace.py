@@ -1,6 +1,7 @@
 from unittest import mock
 
 import pytest
+
 from argparse_shell.namespace import Namespace, UnboundNamespace
 
 
@@ -30,8 +31,7 @@ def test_unbound_namespace_from_object_getter_setter_property(subtests):
             return "test"
 
         @name.setter
-        def name(self, value: str):
-            ...
+        def name(self, value: str): ...
 
     with subtests.test("object"):
         namespace = UnboundNamespace.from_object(Driver())
@@ -46,8 +46,7 @@ def test_unbound_namespace_from_object_coroutine(subtests):
     """Test namespace building for objects with a getter / setter property"""
 
     class Driver:
-        async def my_coro(self):
-            ...
+        async def my_coro(self): ...
 
     with subtests.test("object"):
         namespace = UnboundNamespace.from_object(Driver())
@@ -62,8 +61,7 @@ def test_unbound_namespace_from_object_method(subtests):
     """Test namespace building for objects with methods"""
 
     class Driver:
-        def my_method(self):
-            ...
+        def my_method(self): ...
 
     with subtests.test("object"):
         namespace = UnboundNamespace.from_object(Driver())
@@ -79,8 +77,7 @@ def test_unbound_namespace_from_object_classmethod(subtests):
 
     class Driver:
         @classmethod
-        def my_method(cls):
-            ...
+        def my_method(cls): ...
 
     with subtests.test("object"):
         namespace = UnboundNamespace.from_object(Driver())
@@ -96,8 +93,7 @@ def test_unbound_namespace_from_object_staticmethod(subtests):
 
     class Driver:
         @staticmethod
-        def my_method():
-            ...
+        def my_method(): ...
 
     with subtests.test("object"):
         namespace = UnboundNamespace.from_object(Driver())
@@ -112,8 +108,7 @@ def test_unbound_namespace_from_object_private_method(subtests):
     """Test namespace building for objects with methods"""
 
     class Driver:
-        def _my_method(self):
-            ...
+        def _my_method(self): ...
 
     with subtests.test("object"):
         namespace = UnboundNamespace.from_object(Driver())
@@ -161,8 +156,7 @@ def test_namespace_from_object_getter_setter_property():
             return "test"
 
         @name.setter
-        def name(self, value: str):
-            ...
+        def name(self, value: str): ...
 
     namespace = Namespace.from_object(Driver())
     assert list(namespace.keys()) == ["name"]
@@ -172,8 +166,7 @@ def test_namespace_from_object_coroutine():
     """Test namespace building for objects with a getter / setter property"""
 
     class Driver:
-        async def my_coro(self):
-            ...
+        async def my_coro(self): ...
 
     namespace = Namespace.from_object(Driver())
     assert list(namespace.keys()) == ["my-coro"]
@@ -183,8 +176,7 @@ def test_namespace_from_object_method():
     """Test namespace building for objects with methods"""
 
     class Driver:
-        def my_method(self):
-            ...
+        def my_method(self): ...
 
     namespace = Namespace.from_object(Driver())
     assert list(namespace.keys()) == ["my-method"]
@@ -194,8 +186,7 @@ def test_namespace_from_object_private_method():
     """Test namespace building for objects with methods"""
 
     class Driver:
-        def _my_method(self):
-            ...
+        def _my_method(self): ...
 
     namespace = Namespace.from_object(Driver())
     assert not namespace
@@ -217,11 +208,9 @@ def test_unbound_nested_namespace_class(subtests):
 
     class Nested:
         @property
-        def foo_property(self):
-            ...
+        def foo_property(self): ...
 
-        def foo(self):
-            ...
+        def foo(self): ...
 
     class OuterWithProperty:
         def __init__(self):
@@ -273,8 +262,7 @@ def test_unbound_nested_namespace_class(subtests):
         assert namespace["nested-foo-property"].parent_namespaces == ("nested",)
 
 
-def test_unbound_nested_namespace_module(subtests):
-    ...
+def test_unbound_nested_namespace_module(subtests): ...
 
 
 def test_nested_namespace(subtests):

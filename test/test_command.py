@@ -7,8 +7,7 @@ from argparse_shell.command import UnboundCommand, WrappedCommandType
 def test_command_get_docstring():
     """Test creation of docstrings from existing methods"""
 
-    def no_docstring():
-        ...
+    def no_docstring(): ...
 
     assert UnboundCommand("test", no_docstring, WrappedCommandType.FUNCTION).docstring() == "no_docstring function"
 
@@ -33,8 +32,7 @@ def test_unbound_command_bind(subtests):
     """Test binding of unbound commands"""
     with subtests.test("function"):
 
-        def foo():
-            ...
+        def foo(): ...
 
         unbound_cmd = UnboundCommand.from_callable("foo", foo)
         cmd = unbound_cmd.bind(None)
@@ -43,8 +41,7 @@ def test_unbound_command_bind(subtests):
 
     with subtests.test("module"):
 
-        def module_foo():
-            ...
+        def module_foo(): ...
 
         mod = types.ModuleType("my_module")
         mod.module_foo = module_foo
@@ -58,8 +55,7 @@ def test_unbound_command_bind(subtests):
 
         class DriverClassmethod:
             @classmethod
-            def foo(cls):
-                ...
+            def foo(cls): ...
 
         drv = DriverClassmethod()
         unbound_cmd = UnboundCommand.from_callable("foo", drv.__class__.foo)
@@ -73,8 +69,7 @@ def test_unbound_command_bind(subtests):
 
         class DriverStaticmethod:
             @staticmethod
-            def foo():
-                ...
+            def foo(): ...
 
         drv = DriverStaticmethod()
         unbound_cmd = UnboundCommand.from_callable("foo", drv.__class__.foo)
@@ -85,8 +80,7 @@ def test_unbound_command_bind(subtests):
         assert cmd.func is DriverStaticmethod.foo
 
     class Driver:
-        def foo(self):
-            ...
+        def foo(self): ...
 
     with subtests.test("class"):
         drv = Driver()
@@ -111,8 +105,7 @@ def test_unbound_command_bind(subtests):
 def test_for_namespace():
     """Test multiple nesting of namespaces concatenates the command name"""
 
-    def foo():
-        ...
+    def foo(): ...
 
     namespaces = ("hello", "this", "is", "a", "tree")
     unbound_cmd = UnboundCommand.from_callable("foo", foo)
@@ -177,13 +170,11 @@ def test_unbound_command_bind_nested_class(subtests):
 
 
 def test_command():
-    def foo():
-        ...
+    def foo(): ...
 
 
 def test_unbound_command_bind_nested_module(subtests):
-    def foo():
-        ...
+    def foo(): ...
 
     with subtests.test("function"):
         UnboundCommand.from_callable("foo", foo)

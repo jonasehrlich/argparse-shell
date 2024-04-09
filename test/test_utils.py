@@ -127,11 +127,9 @@ def test_eval_literal_value():
 def test_is_shell_cmd():
     """Test detection of shell commands"""
 
-    def valid_command():
-        ...
+    def valid_command(): ...
 
-    def _private_command():
-        ...
+    def _private_command(): ...
 
     assert utils.is_shell_cmd(valid_command) is True
     assert utils.is_shell_cmd(decorators.no_shell_cmd(valid_command)) is False
@@ -150,8 +148,7 @@ def test_get_command_name():
 
     for input_name, expected_name in names:
 
-        def func():
-            ...
+        def func(): ...
 
         func.__name__ = input_name
         assert utils.get_command_name(func, input_name) == expected_name
@@ -159,15 +156,13 @@ def test_get_command_name():
     cmd_name = "my_cmd"
 
     @decorators.command_name(cmd_name)
-    def func2():
-        ...
+    def func2(): ...
 
     assert utils.get_command_name(func2, func2.__name__) == cmd_name
 
 
 def test_get_argument_help_string():
-    def func(positional, positional_with_typehint: int, positional_with_typehint_and_default: str = "test"):
-        ...
+    def func(positional, positional_with_typehint: int, positional_with_typehint_and_default: str = "test"): ...
 
     sig = inspect.signature(func)
 
