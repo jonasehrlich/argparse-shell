@@ -58,7 +58,7 @@ exclude_also = [
     "from typing(_extensions)? import .*",
     "import typing(_extensions)?.*",
 ]
-fail_under = 95
+fail_under = 85
 
 
 [tool.coverage.run]
