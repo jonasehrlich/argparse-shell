@@ -17,6 +17,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.10"
 docstring-parser = "^0.16"
+typing-extensions = { version = "^4.9.0", python = "<3.11" }
 
 
 [tool.poetry.group.dev.dependencies]
