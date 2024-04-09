@@ -104,7 +104,7 @@ def test_parse_arg_string():
     assert utils.parse_arg_string(" ".join(kwargs_string_items)) == (tuple(), kwargs)
 
     assert utils.parse_arg_string(
-        " ".join(f"{arg} {kwarg}" for arg, kwarg in zip(args_string_items, kwargs_string_items))
+        " ".join(f"{arg} {kwarg}" for arg, kwarg in zip(args_string_items, kwargs_string_items, strict=True))
     ) == (args, kwargs)
 
     assert utils.parse_arg_string("") == (tuple(), dict())
