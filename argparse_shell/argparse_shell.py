@@ -9,7 +9,6 @@ import typing as ty
 from . import builder, constants
 from .namespace import Namespace, UnboundNamespace
 
-
 ArgparseShell_T = ty.TypeVar("ArgparseShell_T", bound="ArgparseShell")  # pylint: disable=invalid-name
 
 
@@ -67,7 +66,7 @@ class ArgparseShell:
         )
         return cls(parser, interactive)
 
-    def main(self, argv: ty.Sequence[str] = None):
+    def main(self, argv: ty.Sequence[str] | None = None) -> None:
         """Run the arg shell. The shell first tries to parse"""
         namespace, _ = self.parser.parse_known_args(argv)
 

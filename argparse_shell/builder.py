@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import argparse
-import io
 import sys
+import typing as ty
 
 import docstring_parser
-import typing as ty
 
 from . import constants, interactive, utils, wrappers
 from .namespace import Namespace
@@ -14,7 +13,7 @@ from .namespace import Namespace
 def build_interactive_shell_from_namespace(
     namespace: Namespace,
     prompt: str = "cli>",
-    intro: str = None,
+    intro: str | None = None,
     *,
     stdin: ty.Optional[ty.TextIO] = None,
     stdout: ty.Optional[ty.TextIO] = None,
@@ -41,7 +40,7 @@ def build_interactive_shell_from_namespace(
 
 
 def build_arg_parser_from_namespace(
-    namespace: Namespace, program_name: str, description: ty.Optional[str] = None
+    namespace: Namespace, program_name: str, description: str | None = None
 ) -> argparse.ArgumentParser:
     """Build an :py:class:`argparse.ArgumentParser` from a namespace definition. The argument parser will contain
     each function in the namespace as a subcommand with all the arguments as positional arguments.
