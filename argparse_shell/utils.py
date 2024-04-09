@@ -112,7 +112,12 @@ def split_to_literals(
 
 
 def find_nth_with_raise(
-    haystack: str, needle: str, start: int = 0, end: int = None, occurrence: int = 0, exc: Exception = None
+    haystack: str,
+    needle: str,
+    start: int = 0,
+    end: int | None = None,
+    occurrence: int = 0,
+    exc: Exception | None = None,
 ) -> int:
     """
     Find the nth occurrence of a substring in a string and raise a specific exception if it is not found
@@ -137,7 +142,7 @@ def find_nth_with_raise(
     return idx
 
 
-def find_nth(haystack: str, needle: str, start: int = 0, end: int = None, occurrence: int = 0) -> int:
+def find_nth(haystack: str, needle: str, start: int = 0, end: int | None = None, occurrence: int = 0) -> int:
     """Find the nth occurrence of a substring in a string
 
     :param haystack: String to find the item in
@@ -185,7 +190,7 @@ def parse_arg_string(arg_string: str) -> ty.Tuple[ty.Tuple[ty.Any, ...], ty.Dict
         split_result = item.split("=", 1)
         if len(split_result) == 1:
             args.append(eval_literal_value(split_result[0]))
-        elif len(split_result) == 2:
+        elif len(split_result) == 2:  # noqa: PLR2004
             kwargs[split_result[0]] = eval_literal_value(split_result[1])
         else:
             raise ValueError(f"Cannot parse argument string item: '{item}'")
@@ -206,10 +211,10 @@ def eval_literal_value(value: str) -> ty.Any:
         try:
             return ast.literal_eval(f"'{value}'")
         except (SyntaxError, ValueError):
-            raise exc  # pylint: disable=raise-missing-from
+            raise exc from None  # pylint: disable=raise-missing-from
 
 
-def is_shell_cmd(func: ty.Callable, name: str = None) -> bool:
+def is_shell_cmd(func: ty.Callable, name: str | None = None) -> bool:
     """Return whether a callable should be added as a shell command.
     This function returns `False` if:
     * The name of the callable starts with an underscore

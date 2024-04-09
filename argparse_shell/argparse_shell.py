@@ -2,12 +2,18 @@ from __future__ import annotations
 
 import argparse
 import cmd
+import collections.abc
 import inspect
 import sys
 import typing as ty
 
 from . import builder, constants
 from .namespace import Namespace, UnboundNamespace
+
+if sys.version_info < (3, 11):
+    from typing_extensions import Self
+else:
+    from typing import Self
 
 ArgparseShell_T = ty.TypeVar("ArgparseShell_T", bound="ArgparseShell")  # pylint: disable=invalid-name
 
@@ -23,16 +29,16 @@ class ArgparseShell:
 
     @classmethod
     def from_object(
-        cls: ty.Type[ArgparseShell_T],
+        cls,
         obj: ty.Any,
         program_name: str,
         intro: ty.Optional[str] = None,
         description: ty.Optional[str] = None,
-        nested_namespaces: ty.Optional[ty.Mapping[str, UnboundNamespace]] = None,
+        nested_namespaces: ty.Optional[collections.abc.Mapping[str, UnboundNamespace]] = None,
         *,
         stdin: ty.Optional[ty.TextIO] = None,
         stdout: ty.Optional[ty.TextIO] = None,
-    ) -> ArgparseShell_T:
+    ) -> Self:
         """
         Factory method to create a ArgparseShell from an arbitrary object.
         The method takes the namespace of the arbitrary object and transforms it to a command line interface.

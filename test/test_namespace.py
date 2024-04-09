@@ -265,7 +265,7 @@ def test_unbound_nested_namespace_class(subtests):
 def test_unbound_nested_namespace_module(subtests): ...
 
 
-def test_nested_namespace(subtests):
+def test_nested_namespace(subtests) -> None:  # noqa: PLR0915
     """Test binding of nested namespaces"""
 
     class Nested:

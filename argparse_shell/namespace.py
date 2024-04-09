@@ -1,16 +1,24 @@
 from __future__ import annotations
 
 import collections
+import collections.abc
 import inspect
+import sys
 import typing as ty
 
 from . import utils
 from .command import Command, UnboundCommand, UnsupportedCommandTypeError
 
+if sys.version_info < (3, 11):
+    from typing_extensions import Self
+else:
+    from typing import Self
+
 __all__ = ["Namespace", "UnboundNamespace"]
 
 T = ty.TypeVar("T")
 Command_T = ty.TypeVar("Command_T")
+SomeMutableMapping_T = ty.TypeVar("SomeMutableMapping_T", bound=collections.abc.MutableMapping)
 
 
 class DuplicateCommandNameError(KeyError):
@@ -30,14 +38,14 @@ class _NamespaceBase(collections.UserDict, ty.Dict[str, Command_T]):
 class Namespace(_NamespaceBase[Command]):
     @classmethod
     def from_object(
-        cls: ty.Type[T], obj: ty.Any, nested_namespaces: ty.Optional[ty.Mapping[str, UnboundNamespace]] = None
-    ) -> T:
+        cls, obj: ty.Any, nested_namespaces: collections.abc.Mapping[str, UnboundNamespace] | None = None
+    ) -> Self:
         """Build a namespace from an object. The namespace is a mapping of command names to callback functions.
         This layer wraps coroutine functions and descriptors in functions, to allow them being called directly.
 
         :param obj: Object to build the namespace from
         :type obj: ty.Any
-        :param nested_namespaces: Mappin
+        :param nested_namespaces: Mapping
         :return: Mapping of command names defined in an object
         :rtype: Namespace
         """
@@ -46,23 +54,23 @@ class Namespace(_NamespaceBase[Command]):
 
 
 class UnboundNamespace(_NamespaceBase[UnboundCommand]):
-    def bind(self, obj: ty.Any, namespace_cls: ty.Type[T] = Namespace) -> T:
+    def bind(self, obj: ty.Any, namespace_cls: ty.Type[SomeMutableMapping_T] = Namespace) -> SomeMutableMapping_T:
         namespace = namespace_cls()
         for cmd in self.values():
             namespace[cmd.name] = cmd.bind(obj)
         return namespace
 
     @classmethod
-    def from_object(  # noqa: C901
-        cls: ty.Type[T], obj: ty.Any, nested_namespaces: ty.Optional[ty.Mapping[str, UnboundNamespace]] = None
-    ) -> T:
+    def from_object(  # noqa: C901, PLR0912
+        cls, obj: ty.Any, nested_namespaces: collections.abc.Mapping[str, UnboundNamespace] | None = None
+    ) -> Self:
         """Build a namespace from an object. The namespace is a mapping of command names to callback functions.
         This layer wraps coroutine functions and descriptors in functions, to allow them being called directly.
 
         :param obj: Object to build the namespace from
         :type obj: ty.Any
         :param nested_namespaces: Mapping of namespace names to unbound, nested namespaces, defaults to None
-        :type nested_namespaces: ty.Mapping[str, UnboundNamespace], optional
+        :type nested_namespaces: collections.abc.Mapping[str, UnboundNamespace], optional
         :return: Mapping of command names defined in a namespace to :py:class:`UnboundCommand` objects
         :rtype: UnboundNamespace
         """
@@ -83,8 +91,8 @@ class UnboundNamespace(_NamespaceBase[UnboundCommand]):
 
             nested_namespace = nested_namespaces.pop(name, None)
             if nested_namespace:
-                for cmd_name, nested_command in nested_namespace.items():
-                    namespace_cmd = nested_command.for_namespace(name)
+                for _, nested_command_ in nested_namespace.items():
+                    namespace_cmd = nested_command_.for_namespace(name)
                     namespace[namespace_cmd.name] = namespace_cmd
                 continue
 
@@ -101,7 +109,7 @@ class UnboundNamespace(_NamespaceBase[UnboundCommand]):
             instance_attributes = set(dir(obj))
             for name, nested_namespace in nested_namespaces_copy.items():
                 if name in instance_attributes:
-                    for cmd_name, nested_command in nested_namespace.items():
+                    for _, nested_command in nested_namespace.items():
                         namespace_cmd = nested_command.for_namespace(name)
                         namespace[namespace_cmd.name] = nested_command.for_namespace(name)
                     nested_namespaces.pop(name, None)
