@@ -1,6 +1,6 @@
 [project]
 name = "argparse-shell"
-version = "0.2.1"
+version = "0.2.0"
 description = "Create interactive shell programs from arbitrary objects using the argparse and cmd modules"
 authors = [{ name = "Jonas Ehrlich", email = "jonas.ehrlich@umsemi.com" }]
 requires-python = ">=3.11"
