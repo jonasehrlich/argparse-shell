@@ -23,7 +23,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "docstring-parser", specifier = ">=0.16,<0.17" },
+    { name = "docstring-parser", specifier = ">=0.16" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.9.0,<5" },
 ]
 

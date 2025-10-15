@@ -15,7 +15,7 @@ classifiers = [
     "Operating System :: MacOS :: MacOS X",
 ]
 dependencies = [
-    "docstring-parser>=0.16,<0.18",
+    "docstring-parser>=0.16",
     "typing-extensions>=4.9.0,<5 ; python_version < '3.11'",
 ]
 
