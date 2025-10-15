@@ -8,14 +8,6 @@ import typing as ty
 
 from . import constants
 
-try:
-    import rich
-    from rich.traceback import Traceback
-
-    __RICH_AVAILABLE__ = True
-except ImportError:
-    __RICH_AVAILABLE__ = False
-
 
 def split_to_literals(
     value: str,
@@ -214,14 +206,14 @@ def eval_literal_value(value: str) -> ty.Any:
             raise exc from None  # pylint: disable=raise-missing-from
 
 
-def is_shell_cmd(func: ty.Callable, name: str | None = None) -> bool:
+def is_shell_cmd(func: ty.Callable[..., ty.Any], name: str | None = None) -> bool:
     """Return whether a callable should be added as a shell command.
     This function returns `False` if:
     * The name of the callable starts with an underscore
     * The attribute `__argparse_shell_cmd__` is set to `False`. This can be done using the `@no_shell_cmd` decorator
 
     :param func: Callable to check
-    :type func: ty.Callable
+    :type func: ty.Callable[..., ty.Any]
     :param name: Name of the attribute, if set to None, the `__name__` attribute of the `func` argument is used,
                  defaults to None
     :type name: str, optional
@@ -247,12 +239,12 @@ def python_name_to_dashed(name: str) -> str:
     return name.replace("_", "-").lower()
 
 
-def get_command_name(func: ty.Callable, default_name: str) -> str:
+def get_command_name(func: ty.Callable[..., ty.Any], default_name: str) -> str:
     """Get the command name for a callable. The command name can be defined using the
     :py:func:`~argparse_shell.decorators.command decorator`.
 
     :param func: Callable to get the command name for
-    :type func: ty.Callable
+    :type func: ty.Callable[..., ty.Any]
     :param default_name: If no specific command name was specified
     :type default_name: str
     :return: Command name for the callable
@@ -286,7 +278,9 @@ def get_argument_help_string(param: inspect.Parameter) -> str:
     return help_str
 
 
-def handle_interactive_error(exc_type: ty.Type[ty.Any], exc_value: BaseException, tb: ty.Optional[types.TracebackType]):
+def handle_interactive_error(
+    exc_type: type[BaseException] | None, exc_value: BaseException, tb: ty.Optional[types.TracebackType]
+) -> None:
     """Handle an error in an interactive method by printing the exception and the stack trace.
 
     If :py:mod:`rich` is installed, its functionality will be used.
@@ -298,8 +292,4 @@ def handle_interactive_error(exc_type: ty.Type[ty.Any], exc_value: BaseException
     :param tb: Traceback of the exception
     :type tb: ty.Optional[types.TracebackType]
     """
-    if __RICH_AVAILABLE__:
-        rich_tb = Traceback.from_exception(exc_type, exc_value, tb, suppress=["argparse_shell"])
-        rich.print(rich_tb, file=sys.stderr)
-    else:
-        traceback.print_exception(exc_type, exc_value, tb, file=sys.stderr)
+    traceback.print_exception(exc_type, exc_value, tb, file=sys.stderr)

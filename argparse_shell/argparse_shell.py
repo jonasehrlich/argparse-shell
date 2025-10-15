@@ -36,8 +36,8 @@ class ArgparseShell:
         description: ty.Optional[str] = None,
         nested_namespaces: ty.Optional[collections.abc.Mapping[str, UnboundNamespace]] = None,
         *,
-        stdin: ty.Optional[ty.TextIO] = None,
-        stdout: ty.Optional[ty.TextIO] = None,
+        stdin: ty.Optional[ty.IO[str]] = None,
+        stdout: ty.Optional[ty.IO[str]] = None,
     ) -> Self:
         """
         Factory method to create a ArgparseShell from an arbitrary object.
@@ -83,14 +83,14 @@ class ArgparseShell:
         else:
             self._execute_interactive()
 
-    def _execute_interactive(self):
+    def _execute_interactive(self) -> None:
         """Execute the interactive shell"""
         try:
             self.interactive.cmdloop()
         except KeyboardInterrupt:
             self._error("\nAborted!")
 
-    def _execute_cli_callback(self, func: ty.Callable, namespace: argparse.Namespace):
+    def _execute_cli_callback(self, func: ty.Callable[..., ty.Any], namespace: argparse.Namespace) -> None:
         namespace_dict = vars(namespace)
         try:
             inspect.signature(func).bind(**namespace_dict)
@@ -99,7 +99,8 @@ class ArgparseShell:
         else:
             func(**namespace_dict)
 
-    def _error(self, msg: str):  # pylint: disable=no-self-use
+    @staticmethod
+    def _error(msg: str) -> None:  # pylint: disable=no-self-use
         """Print the error message and exit with an error code
 
         :param msg: Exit message to print

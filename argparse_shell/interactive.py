@@ -3,6 +3,8 @@ from cmd import Cmd
 
 from argparse_shell.namespace import Namespace
 
+from .command import InteractiveMethod
+
 
 class InteractiveCmd(Cmd):
     """Subclass of the base :py:class:`cmd.Cmd`.
@@ -15,7 +17,13 @@ class InteractiveCmd(Cmd):
     _HELP_IMPLEMENTATION_PREFIX = "help_"
     identchars = Cmd.identchars + "-"
 
-    def __init__(self, namespace: Namespace, stop_on_eof: bool = True, *args, **kwargs) -> None:
+    def __init__(
+        self,
+        namespace: Namespace,
+        stop_on_eof: bool = True,
+        stdin: ty.IO[str] | None = None,
+        stdout: ty.IO[str] | None = None,
+    ) -> None:
         """Initialize an interactive shell working with a namespace instead of subclassing.
 
         The interactive shell will use all commands consisting of multiple words as dashes.
@@ -25,12 +33,12 @@ class InteractiveCmd(Cmd):
         :param stop_on_eof: Whether to stop when a EOF (Ctrl + D) is received, defaults to True
         :type stop_on_eof: bool, optional
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(stdin=stdin, stdout=stdout)
 
         self._namespace = namespace
         if stop_on_eof:
 
-            def do_eof(_):
+            def do_eof(_: ty.Any) -> ty.Literal[True]:
                 self.stdout.write("EOF: exit\n")
                 return True
 
@@ -56,14 +64,16 @@ class InteractiveCmd(Cmd):
             names.append(cmd.interactive_help_method_name)
         return names
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> InteractiveMethod:
         """Fallback for attribute accesses, to replace dashes with underscores"""
         for prefix in (self._CMD_IMPLEMENTATION_PREFIX, self._HELP_IMPLEMENTATION_PREFIX):
             if name.startswith(prefix):
                 try:
                     prefix_len = len(prefix)
                     cmd = self._namespace[name[prefix_len:]]
-                    return cmd.get_interactive_method_for_prefix(prefix, self.stdout)
+                    return cmd.get_interactive_method_for_prefix(
+                        ty.cast(ty.Literal["help_"] | ty.Literal["do_"], prefix), self.stdout
+                    )
                 except (KeyError, ValueError) as exc:
                     raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'") from exc
 

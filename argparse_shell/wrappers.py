@@ -6,40 +6,33 @@ import typing as ty
 
 from . import utils
 
-try:
-    import rich.pretty
-
-    __RICH_AVAILABLE__ = True
-except ImportError:
-    __RICH_AVAILABLE__ = False
+P = ty.ParamSpec("P")
+T = ty.TypeVar("T")
 
 
-def pprint_wrapper(func: ty.Callable, stream: ty.TextIO) -> ty.Callable:
+def pprint_wrapper(func: ty.Callable[P, T], stream: ty.IO[str]) -> ty.Callable[P, T]:
     """Get a wrapper around a function that pretty-prints the output before returning
 
     :param func: Callable to wrap
     :type func: ty.Callable
     :param stream: Stream to write the return value of the callable to
-    :type stream: ty.TextIO
+    :type stream: ty.IO[str]
     :return: Wrapped function
     :rtype: ty.Callable
     """
 
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         result = func(*args, **kwargs)
         if result is not None:
-            if __RICH_AVAILABLE__:
-                output = rich.pretty.pprint(result)
-            else:
-                output = pprint.pformat(result)
-                stream.write(output)
+            output = pprint.pformat(result)
+            stream.write(output)
         return result
 
     return wrapper
 
 
-def wrap_interactive_method(func: ty.Callable) -> ty.Callable:
+def wrap_interactive_method(func: ty.Callable[..., T]) -> ty.Callable[[str], None]:
     """Get a wrapper for a callable, to be used in a :py:class:`cmd.Cmd` interactive shell.
     The wrapper function expects two arguments, the instance (`self`) and the argument string.
     The argument string is parsed to Python literals which are then passed into the wrapped method.
@@ -56,7 +49,7 @@ def wrap_interactive_method(func: ty.Callable) -> ty.Callable:
     """
 
     @functools.wraps(func)
-    def wrapper(arg_string: str):
+    def wrapper(arg_string: str) -> None:
         args, kwargs = utils.parse_arg_string(arg_string)
         try:
             func(*args, **kwargs)
@@ -70,17 +63,17 @@ def wrap_interactive_method(func: ty.Callable) -> ty.Callable:
     return wrapper
 
 
-def wrap_corofunc(corofunc: ty.Callable):
+def wrap_corofunc(corofunc: ty.Callable[P, ty.Coroutine[None, None, T]]) -> ty.Callable[P, T]:
     """Get a wrapper for a coroutine function that executes the coroutine on the event loop"""
 
     @functools.wraps(corofunc)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         return _run_on_loop(corofunc(*args, **kwargs))
 
     return wrapper
 
 
-def wrap_datadescriptor(descriptor: ty.Any) -> ty.Callable:
+def wrap_datadescriptor(descriptor: ty.Any) -> ty.Callable[[ty.Any], ty.Any] | ty.Callable[[ty.Any, str], None]:
     """Get a function wrapper for a descriptor on a object.
 
     The function wrapper will call the getter if no argument is passed into the wrapper,
@@ -98,7 +91,7 @@ def wrap_datadescriptor(descriptor: ty.Any) -> ty.Callable:
     func = descriptor.fget or descriptor.fset
     name = func.__name__
 
-    def wrapper(obj: ty.Any, *args):  # pylint: disable=inconsistent-return-statements
+    def wrapper(obj: ty.Any, *args: ty.Any) -> ty.Any | None:  # pylint: disable=inconsistent-return-statements
         if not args:
             # No args, so the getter needs to be called
             return descriptor.fget(obj)
@@ -107,7 +100,7 @@ def wrap_datadescriptor(descriptor: ty.Any) -> ty.Callable:
             if descriptor.fset is None:
                 raise AttributeError(f"Can't set attribute '{name}'")
             descriptor.fset(obj, *args)
-            return
+            return None
 
         # Descriptors only support one or no argument, so raise if
         raise TypeError(f"Invalid number of arguments for descriptor {obj.__class__.__name__}.{name}")
@@ -118,24 +111,24 @@ def wrap_datadescriptor(descriptor: ty.Any) -> ty.Callable:
     return wrapper
 
 
-def wrap_generatorfunc(genfunc: ty.Callable):
+def wrap_generatorfunc(genfunc: ty.Callable[P, ty.Generator[T, None, None]]) -> ty.Callable[P, list[T]]:
     """Get a function wrapper for a generatorfunction"""
 
     @functools.wraps(genfunc)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> list[T]:
         gen = genfunc(*args, **kwargs)
         return list(gen)
 
     return wrapper
 
 
-def wrap_asyncgeneratorfunc(asyncgenfunc: ty.Callable):
+def wrap_asyncgeneratorfunc(asyncgenfunc: ty.Callable[P, ty.AsyncGenerator[T, None]]) -> ty.Callable[P, list[T]]:
     """Get a function wrapper for a generatorfunction"""
 
     @functools.wraps(asyncgenfunc)
-    def wrapper(*args, **kwargs):
-        async def consume_asyncgen():
-            gen: ty.AsyncGenerator = asyncgenfunc(*args, **kwargs)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> list[T]:
+        async def consume_asyncgen() -> list[T]:
+            gen = asyncgenfunc(*args, **kwargs)
             return [item async for item in gen]
 
         return _run_on_loop(consume_asyncgen())
@@ -143,14 +136,13 @@ def wrap_asyncgeneratorfunc(asyncgenfunc: ty.Callable):
     return wrapper
 
 
-def _run_on_loop(coro: ty.Coroutine):
-    """Run a coroutine on the event loop. In future releases of Python, :py:func:`asyncio.get_event_loop_loop`
+def _run_on_loop(coro: ty.Coroutine[None, None, T]) -> T:
+    """Run a coroutine on the event loop. In future releases of Python, :py:func:`asyncio.get_event_loop`
     will be an alias of :py:func:`asyncio.get_running_loop`. This method either re-uses a running loop, or uses the
     :py:func:`asyncio.run` function."""
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
-        runner = asyncio.run
+        return asyncio.run(coro)
     else:
-        runner = loop.run_until_complete
-    return runner(coro)
+        return loop.run_until_complete(coro)

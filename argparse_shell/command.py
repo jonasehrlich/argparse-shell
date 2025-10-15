@@ -19,6 +19,7 @@ UnboundCommand_T = ty.TypeVar("UnboundCommand_T", bound="UnboundCommand")
 
 InteractiveHelpMethod = ty.Callable[[], None]
 InteractiveCommandMethod = ty.Callable[[str], None]
+InteractiveMethod = InteractiveHelpMethod | InteractiveCommandMethod
 
 
 class UnsupportedCommandTypeError(Exception):
@@ -32,7 +33,7 @@ class _CommandBase:
     _INTERACTIVE_METHOD_PREFIX = "do_"
     _INTERACTIVE_HELP_METHOD_PREFIX = "help_"
 
-    def __init__(self, name: str, func: ty.Callable) -> None:
+    def __init__(self, name: str, func: ty.Callable[..., ty.Any]) -> None:
         self.name = name
         self.func = func
 
@@ -93,7 +94,7 @@ class UnboundCommand(_CommandBase):
     def __init__(
         self,
         name: str,
-        func: ty.Callable,
+        func: ty.Callable[..., ty.Any],
         wrapped_command_type: WrappedCommandType,
         parent_namespaces: ty.Sequence[str] = tuple(),
     ) -> None:
@@ -102,7 +103,7 @@ class UnboundCommand(_CommandBase):
         self._wrapped_command_type = wrapped_command_type
 
     @classmethod
-    def from_callable(cls: ty.Type[UnboundCommand_T], name: str, func: ty.Callable) -> UnboundCommand_T:
+    def from_callable(cls: ty.Type[UnboundCommand_T], name: str, func: ty.Callable[..., ty.Any]) -> UnboundCommand_T:
         """Create an unbound command from an arbitrary object
 
         :param cls: Class that is created
@@ -190,30 +191,34 @@ class Command(_CommandBase):
     :py:class:`UnboundCommand` and binding it to an object
     """
 
-    def __init__(self, name: str, func: ty.Callable) -> None:
+    def __init__(self, name: str, func: ty.Callable[..., ty.Any]) -> None:
         super().__init__(name, func)
 
     @ty.overload
-    def get_interactive_method_for_prefix(self, prefix: ty.Literal["help_"]) -> InteractiveHelpMethod: ...
+    def get_interactive_method_for_prefix(
+        self, prefix: ty.Literal["help_"], stream: ty.IO[str] = sys.stdout
+    ) -> InteractiveHelpMethod: ...
 
     @ty.overload
-    def get_interactive_method_for_prefix(self, prefix: ty.Literal["do_"]) -> InteractiveCommandMethod: ...
+    def get_interactive_method_for_prefix(
+        self, prefix: ty.Literal["do_"], stream: ty.IO[str] = sys.stdout
+    ) -> InteractiveCommandMethod: ...
 
     def get_interactive_method_for_prefix(
-        self, prefix: ty.Union[ty.Literal["help_"], ty.Literal["do_"]], stream: ty.TextIO = sys.stdout
-    ) -> ty.Union[InteractiveCommandMethod, InteractiveHelpMethod]:
+        self, prefix: ty.Literal["help_", "do_"], stream: ty.IO[str] = sys.stdout
+    ) -> InteractiveMethod:
         """Get the interactive method for a prefix.
 
         This method returns either the :py:attr:`Command.interactive_method` or the
         :py:attr:`Command.interactive_help_method` depending on the prefix value
 
         :param prefix: Prefix string of the command according to the definition in the cmd module
-        :type prefix: ty.Union[ty.Literal["help_"], ty.Literal["do_"]]
+        :type prefix: ty.Literal["help_"] | ty.Literal["do_"]
         :param stream: Stream to use as an output, defaults to sys.stdout
-        :type stream: ty.TextIO
+        :type stream: ty.IO[str]
         :raises ValueError: Raised if the prefix is unknown
         :return: Interactive method for a prefix for this command
-        :rtype: ty.Union[InteractiveCommandMethod, InteractiveHelpMethod]
+        :rtype: InteractiveMethod
         """
         if prefix == self._INTERACTIVE_METHOD_PREFIX:
             return self._get_interactive_method(stream)
@@ -221,11 +226,11 @@ class Command(_CommandBase):
             return self._get_interactive_help_method(stream)
         raise ValueError(f"Unknown prefix '{prefix}'")
 
-    def _get_interactive_help_method(self, stream: ty.TextIO = sys.stdout) -> ty.Callable[[], None]:
+    def _get_interactive_help_method(self, stream: ty.IO[str] = sys.stdout) -> ty.Callable[[], None]:
         """Creates a help function to use in the interactive mode
 
         :param stream: Stream to write the return value to, defaults to sys.stdout
-        :type stream: ty.TextIO, optional
+        :type stream: ty.IO[str] , optional
         :param func: Function to create the help function for
         :type func: ty.Callable
         """
@@ -269,18 +274,18 @@ class Command(_CommandBase):
         returns_section = "\n".join(returns_section_list)
         help_text = f"{usage_str}\n\n{command_description}\n\n{parameters_section}\n\n{returns_section}\n"
 
-        def do_help():
+        def do_help() -> None:
             stream.write(help_text)
 
         do_help.__name__ = f"{self._INTERACTIVE_HELP_METHOD_PREFIX}{self.func.__name__}"
         return do_help
 
-    def _get_interactive_method(self, stream: ty.TextIO = sys.stdout) -> ty.Callable[[str], None]:
+    def _get_interactive_method(self, stream: ty.IO[str] = sys.stdout) -> ty.Callable[[str], None]:
         """Get the method wrapped for an interactive shell. This includes adding parsing of the command string to
         Python arguments and printing of results to a stream
 
         :param stream: Stream to write the return value to, defaults to sys.stdout
-        :type stream: ty.TextIO, optional
+        :type stream: ty.IO[str] , optional
         :return: The method with automated command string parsing
         :rtype: ty.Callable[[str], None]
         """

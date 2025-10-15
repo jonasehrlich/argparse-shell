@@ -15,8 +15,8 @@ def build_interactive_shell_from_namespace(
     prompt: str = "cli>",
     intro: str | None = None,
     *,
-    stdin: ty.Optional[ty.TextIO] = None,
-    stdout: ty.Optional[ty.TextIO] = None,
+    stdin: ty.Optional[ty.IO[str]] = None,
+    stdout: ty.Optional[ty.IO[str]] = None,
 ) -> interactive.InteractiveCmd:
     """Build a interactive shell from a namespace definition
 
@@ -27,9 +27,9 @@ def build_interactive_shell_from_namespace(
     :param intro: Intro, or welcome message to print after interactive shell start, defaults to None
     :type intro: str, optional
     :param stdin: TextIOWrapper to use as the stdin for the interactive shell, defaults to None
-    :type stdin: ty.Optional[ty.TextIO], optional
+    :type stdin: ty.Optional[ty.IO[str] ], optional
     :param stdout: TextIOWrapper to use as the stdout for the interactive shell, defaults to None
-    :type stdout: ty.Optional[ty.TextIO], optional
+    :type stdout: ty.Optional[ty.IO[str] ], optional
     :return: InteractiveCmd
     :rtype: interactive.InteractiveCmd
     """

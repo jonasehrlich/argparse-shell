@@ -3,29 +3,23 @@ from __future__ import annotations
 import collections
 import collections.abc
 import inspect
-import sys
 import typing as ty
+from typing import Self
 
 from . import utils
-from .command import Command, UnboundCommand, UnsupportedCommandTypeError
-
-if sys.version_info < (3, 11):
-    from typing_extensions import Self
-else:
-    from typing import Self
+from .command import Command, InteractiveMethod, UnboundCommand, UnsupportedCommandTypeError
 
 __all__ = ["Namespace", "UnboundNamespace"]
 
 T = ty.TypeVar("T")
-Command_T = ty.TypeVar("Command_T")
-SomeMutableMapping_T = ty.TypeVar("SomeMutableMapping_T", bound=collections.abc.MutableMapping)
+Command_T = ty.TypeVar("Command_T", bound=InteractiveMethod)
 
 
 class DuplicateCommandNameError(KeyError):
     """Raised if a command name is added for a second time to a namespace"""
 
 
-class _NamespaceBase(collections.UserDict, ty.Dict[str, Command_T]):
+class _NamespaceBase(collections.UserDict[str, Command_T]):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({super().__repr__()})"
 
@@ -39,7 +33,7 @@ class Namespace(_NamespaceBase[Command]):
     @classmethod
     def from_object(
         cls, obj: ty.Any, nested_namespaces: collections.abc.Mapping[str, UnboundNamespace] | None = None
-    ) -> Self:
+    ) -> Namespace:
         """Build a namespace from an object. The namespace is a mapping of command names to callback functions.
         This layer wraps coroutine functions and descriptors in functions, to allow them being called directly.
 
@@ -54,7 +48,7 @@ class Namespace(_NamespaceBase[Command]):
 
 
 class UnboundNamespace(_NamespaceBase[UnboundCommand]):
-    def bind(self, obj: ty.Any, namespace_cls: ty.Type[SomeMutableMapping_T] = Namespace) -> SomeMutableMapping_T:
+    def bind(self, obj: ty.Any, namespace_cls: ty.Type[Namespace] = Namespace) -> Namespace:
         namespace = namespace_cls()
         for cmd in self.values():
             namespace[cmd.name] = cmd.bind(obj)
