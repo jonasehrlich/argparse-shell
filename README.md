@@ -67,25 +67,16 @@ if __name__ == "__main__":
 
 ## Development
 
-Fork the repository from [Github](https://github.com/jonasehrlich/argparse-shell)
-
-Clone your version of the repository
+Create a virtual environment using
 
 ``` bash
-git clone https://github.com/<your-username>/argparse-shell
-```
-
-Install the dependencies and dev dependencies using
-
-``` bash
-pip install -e .[dev]
+uv sync
 ```
 
 Install the [pre-commit](https://pre-commit.com/) hooks using
 
 ``` bash
-$ pre-commit install
-pre-commit installed at .git/hooks/pre-commit
+pre-commit install
 ```
 
 Now you have an [editable installation](https://pip.pypa.io/en/stable/cli/pip_install/#editable-installs),
@@ -96,18 +87,13 @@ ready to develop.
 After installing all the dependencies, run the test suite using
 
 ``` bash
-pytest
+uv run pytest
 ```
 
 The options for _pytest_ are defined in the _setup.cfg_ and include test coverage check.
 The coverage currently has a `fail-under` limit of 75 percent. This limit might get increased when more tests get added.
 
-### Formatting
+### Linting and Formatting
 
-The Python code in this repository is formatted using black [black](https://github.com/psf/black) with a line length
-of 120 characters. The configuration for _black_ is located in the section `[tool.black]` section of _pyproject.toml_.
-
-### Linting
-
-Linting is implemented using [flake8](https://github.com/PyCQA/flake8). The configuration for _flake8_ is located in
-the section `[flake8]` of the _setup.cfg_.
+The Python code in this repository is linted and formatted using [ruff](https://astral.sh/ruff) with a line length
+of 120 characters.
