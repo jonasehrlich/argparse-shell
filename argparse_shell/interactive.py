@@ -39,7 +39,7 @@ class InteractiveCmd(Cmd):
     def preloop(self) -> None:
         """Pre loop hook. Remove dashes from the word delimiters in the `readline` module"""
         try:
-            import readline  # pylint: disable=import-outside-toplevel
+            import readline  # noqa: PLC0415
 
             # Remove dashes from the readline auto completion delimiters
             readline.set_completer_delims(readline.get_completer_delims().replace("-", ""))

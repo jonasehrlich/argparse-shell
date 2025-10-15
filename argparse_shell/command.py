@@ -177,7 +177,7 @@ class UnboundCommand(_CommandBase):
         sig = super().signature()
 
         updated_parameters = list(sig.parameters.values())
-        if len(updated_parameters) and updated_parameters[0].name == "self":
+        if updated_parameters and updated_parameters[0].name == "self":
             # We have a method that is unbound, remove the instance parameter from the signature
             sig = sig.replace(parameters=updated_parameters[1:])
 

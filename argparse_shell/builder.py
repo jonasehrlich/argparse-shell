@@ -58,7 +58,6 @@ def build_arg_parser_from_namespace(
     parser = argparse.ArgumentParser(prog=program_name, description=description)
     subparsers = parser.add_subparsers(title="sub commands", help="")
     for name, cmd in namespace.items():
-
         parse_result = docstring_parser.parse(cmd.docstring())
 
         sub_cmd_parser = subparsers.add_parser(

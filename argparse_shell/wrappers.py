@@ -135,7 +135,6 @@ def wrap_asyncgeneratorfunc(asyncgenfunc: ty.Callable):
     @functools.wraps(asyncgenfunc)
     def wrapper(*args, **kwargs):
         async def consume_asyncgen():
-
             gen: ty.AsyncGenerator = asyncgenfunc(*args, **kwargs)
             return [item async for item in gen]
 

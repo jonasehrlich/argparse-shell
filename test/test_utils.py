@@ -35,7 +35,6 @@ def test_split_to_literals(subtests):
 
     nested_sequences = [sequence.__class__([sequence]) for sequence in items if not isinstance(sequence, (str, set))]
     for item in nested_sequences:
-
         with subtests.test(item=item):
             literals = list(utils.split_to_literals(str(item)))
             assert literals == [str(item)]

@@ -68,9 +68,7 @@ def mockstream() -> ty.TextIO:
     return m
 
 
-def test_pprint_wrapper(
-    subtests, args_kwargs, mockreturn_10: mock.Mock, mockstream: mock.Mock
-):  # pylint: disable=redefined-outer-name
+def test_pprint_wrapper(subtests, args_kwargs, mockreturn_10: mock.Mock, mockstream: mock.Mock):  # pylint: disable=redefined-outer-name
     """Test that functions wrapped into the pprint_wrapper call pprint.pprint with the result and return it"""
     with mock.patch(f"{wrappers.pprint_wrapper.__module__}.__RICH_AVAILABLE__", False):
         wrapped = wrappers.pprint_wrapper(mockreturn_10, mockstream)

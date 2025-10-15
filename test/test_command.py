@@ -92,7 +92,6 @@ def test_unbound_command_bind(subtests):
         assert cmd.func == drv.foo
 
     with subtests.test("instance"):
-
         drv = Driver()
         unbound_cmd = UnboundCommand.from_callable("foo", drv.foo)
 
@@ -147,7 +146,6 @@ def test_unbound_command_bind_nested_class(subtests):
             self.nested = Nested()
 
     for klass in (OuterWithProperty, OuterWithClassAttribute, OuterWithInitAttribute):
-
         with subtests.test(klass.__name__):
             obj = OuterWithProperty()
             for method, expected_args in (
@@ -156,7 +154,6 @@ def test_unbound_command_bind_nested_class(subtests):
                 (Nested.staticmethod_foo, tuple()),
             ):
                 with subtests.test(method.__name__):
-
                     unbound_cmd = UnboundCommand.from_callable(method.__name__.replace("_", "-"), method).for_namespace(
                         "nested"
                     )
